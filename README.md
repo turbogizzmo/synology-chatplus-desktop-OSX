@@ -35,10 +35,18 @@ policies. See [provider details](docs/PROVIDERS.md).
 
 ## Status
 
-`0.5.0-beta.6`. macOS is the only target of this repository. Builds are unsigned and
-not notarized, and there is no auto-updater (the updater is compiled in but disabled).
-Native unread and notification delivery on macOS is being brought up; see open pull
-requests for progress.
+`0.6.0`. macOS is the only target of this repository. Builds are not notarized by
+Apple, so macOS asks once before the first launch. Download the latest release from the
+[download page](https://turbogizzmo.github.io/synology-chatplus-desktop-OSX/).
+
+Installed apps update themselves: they check GitHub every few hours and install a new
+version after you confirm a restart (Settings > Updates). Updates are signed with this
+project's update key and rejected otherwise.
+
+To publish a release, set the version in `package.json`, `package-lock.json`,
+`src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `src-tauri/tauri.conf.json`, then
+push a matching tag (`v0.6.1`). The release workflow builds the universal app, signs
+the update with the `TAURI_SIGNING_PRIVATE_KEY` repository secret and publishes it.
 
 ## Build from source
 

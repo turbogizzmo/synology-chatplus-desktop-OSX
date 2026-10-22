@@ -2,6 +2,24 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## 0.6.0 - first macOS release
+
+### Added
+
+- Native macOS app (Apple Silicon and Intel) built from ChatPlus Desktop.
+- Sign in with just a Synology QuickConnect ID; the app finds and verifies your
+  NAS and follows a laptop between networks. No DSM Login Portal alias needed.
+- Unread badges and desktop notifications on macOS, an Edit menu for copy and
+  paste, and reopening from the Dock.
+- Staying signed in across restarts when "Stay signed in" is chosen in DSM.
+- Automatic updates: the app checks for new versions and installs them after
+  you confirm a restart.
+
+### Fixed
+
+- Embedded frames in chats load in place instead of opening in the browser.
+- The service bar is hidden when only one service is enabled.
+
 ## 0.5.0-beta.6 - development candidate
 
 ### Added
