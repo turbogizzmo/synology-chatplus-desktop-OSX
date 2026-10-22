@@ -7,6 +7,8 @@ mod diagnostics;
 mod downloads;
 mod i18n;
 #[cfg(target_os = "macos")]
+mod macos_navigation;
+#[cfg(target_os = "macos")]
 mod macos_notifications;
 mod menu;
 mod native_shortcuts;
