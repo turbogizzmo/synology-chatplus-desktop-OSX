@@ -537,15 +537,25 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
     let popup_app = app.clone();
     let load_app = app.clone();
     let load_id = service.id.clone();
-    let url = service
-        .provider
-        .validate_url(&service.url)?
-        .parse()
-        .map_err(|_| "Invalid service URL.")?;
+    // An unverified QuickConnect service loads nothing until it resolves; following
+    // the directory link would redirect to a host the trust checks do not know.
+    let url = if crate::quickconnect::pending(app, service) {
+        crate::quickconnect::refresh(app, service, false);
+        "about:blank".parse().map_err(|_| "Invalid service URL.")?
+    } else {
+        service
+            .provider
+            .validate_url(&crate::quickconnect::effective(app, service))?
+            .parse()
+            .map(|url| service.provider.dsm_launch(url))
+            .map_err(|_| "Invalid service URL.")?
+    };
     let mut builder = WebviewBuilder::new(&session.webview_label, WebviewUrl::External(url))
         .disable_drag_drop_handler()
         .on_navigation(move |target| {
-            if nav_service.provider.allows(&nav_service.url, target) {
+            // Resolved per navigation: a QuickConnect re-resolution may move the origin.
+            let trusted = crate::quickconnect::effective(&nav_app, &nav_service);
+            if nav_service.provider.allows(&trusted, target) {
                 true
             } else {
                 external(&nav_app, target);
@@ -553,8 +563,12 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             }
         })
         .on_new_window(move |target, features| {
-            if crate::downloads::attachment_popup(&popup_service, &target) {
-                return match crate::downloads::popup(&popup_app, &popup_service, features) {
+            let trusted = ServiceConfig {
+                url: crate::quickconnect::effective(&popup_app, &popup_service),
+                ..popup_service.clone()
+            };
+            if crate::downloads::attachment_popup(&trusted, &target) {
+                return match crate::downloads::popup(&popup_app, &trusted, features) {
                     Ok(window) => tauri::webview::NewWindowResponse::Create { window },
                     Err(_) => {
                         crate::shell::report(
@@ -565,7 +579,7 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
                     }
                 };
             }
-            if popup_service.provider.allows(&popup_service.url, &target) {
+            if popup_service.provider.allows(&trusted.url, &target) {
                 if let Some(view) = popup_app.get_webview(&label(&popup_service.id)) {
                     let _ = view.navigate(target);
                 }

@@ -347,6 +347,7 @@
   "services.notificationsUnsupported": "Dieser Anbieter unterstützt noch keine Desktop-Benachrichtigungen.",
   "services.nameRequired": "Anzeigenamen eingeben.",
   "services.urlInvalid": "Gültige HTTP- oder HTTPS-URL eingeben.",
+  "services.quickconnectHelp": "Gib die Adresse deines NAS ein (z. B. https://nas.example.com:5001) oder nur deine Synology-QuickConnect-ID (z. B. mynas). Ein DSM-Alias ist nicht nötig. Drücke nach einem Netzwerkwechsel Cmd+R.",
   "services.urlSlack": "Eine HTTPS-Slack-URL auf slack.com oder *.slack.com ohne eigenen Port verwenden.",
   "services.limit": "Es können bis zu 12 Dienste eingerichtet werden.",
   "services.draftRemovalHelp": "Das gespeicherte Profil bleibt erhalten. Das Entfernen wird mit „Speichern“ übernommen.",

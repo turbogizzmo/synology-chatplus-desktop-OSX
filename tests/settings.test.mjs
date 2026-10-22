@@ -342,7 +342,9 @@ test("choosing ChatPlus reuses the shared validation and persists a fresh isolat
       .checked,
     true,
   );
-  setServiceField(f, "url", "invalid");
+  // A single word is a QuickConnect ID for Synology providers; use input that is
+  // neither a URL nor an ID.
+  setServiceField(f, "url", "not a server");
   applyServiceDialog(f);
   assert.equal(
     f.calls.some((call) => call.command === "save_settings"),

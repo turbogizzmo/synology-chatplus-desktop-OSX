@@ -6,7 +6,7 @@ const { code } = await transform(
   await readFile("src/app/navigation.ts", "utf8"),
   { loader: "ts", format: "esm" },
 );
-const { normalizeServer } = await import(
+const { normalizeServer, quickConnectUrl } = await import(
   `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
 );
 test("normalizes server URLs", () => {
@@ -32,4 +32,43 @@ test("rejects credentials, tokens, non-web schemes and malformed input", () => {
     "",
   ])
     assert.throws(() => normalizeServer(value));
+});
+
+test("QuickConnect IDs and links become the canonical stored link", () => {
+  for (const [input, expected] of [
+    ["MyNas", "https://quickconnect.to/mynas/"],
+    [" mynas ", "https://quickconnect.to/mynas/"],
+    ["quickconnect.to/mynas", "https://quickconnect.to/mynas/"],
+    ["https://QuickConnect.to/mynas/", "https://quickconnect.to/mynas/"],
+    ["http://quickconnect.to/mynas", "https://quickconnect.to/mynas/"],
+    [
+      "https://quickconnect.to/mynas/chatplus",
+      "https://quickconnect.to/mynas/chatplus/",
+    ],
+    ["mynas.quickconnect.to", "https://quickconnect.to/mynas/"],
+    ["https://mynas.quickconnect.cn/", "https://quickconnect.cn/mynas/"],
+  ])
+    assert.equal(quickConnectUrl(input), expected, input);
+  // Canonical output round-trips through the ordinary URL normalizer unchanged.
+  assert.equal(
+    normalizeServer(quickConnectUrl("mynas")),
+    "https://quickconnect.to/mynas/",
+  );
+});
+
+test("ordinary server URLs and malformed input are not QuickConnect", () => {
+  for (const input of [
+    "",
+    "https://nas.example.com/chat/",
+    "https://mynas.direct.quickconnect.to/chat/",
+    "https://quickconnect.to/",
+    "https://quickconnect.to:8443/mynas",
+    "https://user@quickconnect.to/mynas",
+    "https://quickconnect.to/mynas?x=1",
+    "-bad",
+    "my_nas",
+    "my nas",
+    "192.168.1.20",
+  ])
+    assert.equal(quickConnectUrl(input), null, input);
 });
