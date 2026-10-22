@@ -23,6 +23,9 @@ pub async fn get_notification_permission(
     app: tauri::AppHandle,
 ) -> Result<crate::desktop_notifications::Permission, String> {
     local(&window, &["settings"])?;
+    // Settings re-checks on focus, often right after the user changed System Settings.
+    #[cfg(target_os = "macos")]
+    crate::macos_notifications::refresh_authorization().await;
     let mut result = crate::desktop_notifications::permission(&app);
     result.webview_state = crate::notification_bridge::permission_state(&app).await;
     Ok(result)
@@ -40,7 +43,20 @@ pub fn open_notification_settings(
             .open_url("ms-settings:notifications", None::<&str>)
             .map_err(|_| "Could not open Windows notification settings.".into())
     }
-    #[cfg(not(windows))]
+    // Opens System Settings at this app's Notifications entry (macOS 13+; older
+    // versions land on the Notifications pane).
+    #[cfg(target_os = "macos")]
+    {
+        use tauri_plugin_opener::OpenerExt;
+        let url = format!(
+            "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id={}",
+            app.config().identifier
+        );
+        app.opener()
+            .open_url(url, None::<&str>)
+            .map_err(|_| "Could not open macOS notification settings.".into())
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = app;
         Err("Open notification settings in your operating system.".into())
