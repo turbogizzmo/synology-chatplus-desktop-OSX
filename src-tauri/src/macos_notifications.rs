@@ -244,17 +244,23 @@ fn note_refusal(error: *mut NSError) -> bool {
 
 fn script_command(title: &str, body: &str, sound: bool) -> Command {
     // Provider text travels as argv and is never spliced into AppleScript source.
+    // `--` ends option parsing: without it a title of "-e" makes osascript run the
+    // body as a second script statement.
     let script = if sound {
         "on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv) sound name \"Glass\"\nend run"
     } else {
         "on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv)\nend run"
     };
+    let mut command = osascript(script, title, body);
+    command.stdout(Stdio::null()).stderr(Stdio::null());
+    command
+}
+
+fn osascript(script: &str, title: &str, body: &str) -> Command {
     let mut command = Command::new("/usr/bin/osascript");
     command
-        .args(["-e", script, title, body])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
+        .args(["-e", script, "--", title, body])
+        .stdin(Stdio::null());
     command
 }
 
@@ -300,15 +306,37 @@ mod tests {
             .map(|arg| arg.to_string_lossy().into_owned())
             .collect();
         assert_eq!(command.get_program(), "/usr/bin/osascript");
-        assert_eq!(args.len(), 4);
+        assert_eq!(args.len(), 5);
         assert_eq!(args[0], "-e");
         assert!(!args[1].contains(hostile) && !args[1].contains("quoted"));
-        assert_eq!(args[2], hostile);
-        assert_eq!(args[3], "body \"quoted\"");
+        assert_eq!(args[2], "--");
+        assert_eq!(args[3], hostile);
+        assert_eq!(args[4], "body \"quoted\"");
         assert!(args[1].contains("sound name"));
         assert!(!script_command("t", "b", false)
             .get_args()
             .any(|arg| arg.to_string_lossy().contains("sound name")));
+    }
+
+    #[test]
+    fn option_shaped_provider_text_stays_data_in_real_osascript() {
+        // Same argument layout as the notification command, with a script that
+        // only echoes argv, so this runs osascript without showing anything.
+        let echo = "on run argv\nreturn ((count of argv) as text) & \"|\" & (item 1 of argv) & \"|\" & (item 2 of argv)\nend run";
+        for (title, body) in [
+            ("-e", "return \"INJECTED\""),
+            ("-l", "JavaScript"),
+            ("--", "-e"),
+            ("Alice", "hello -e world"),
+        ] {
+            let output = osascript(echo, title, body).output().unwrap();
+            assert!(output.status.success(), "{title:?}: {output:?}");
+            assert_eq!(
+                String::from_utf8_lossy(&output.stdout).trim(),
+                format!("2|{title}|{body}"),
+                "{title:?}"
+            );
+        }
     }
 
     #[test]
