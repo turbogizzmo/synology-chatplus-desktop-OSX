@@ -10,6 +10,8 @@ mod i18n;
 mod macos_navigation;
 #[cfg(target_os = "macos")]
 mod macos_notifications;
+#[cfg(target_os = "macos")]
+mod macos_session;
 mod menu;
 mod native_shortcuts;
 mod navigation;
@@ -149,6 +151,8 @@ fn main() {
             // Cached QuickConnect addresses load immediately; verify them off the startup path.
             quickconnect::refresh_all(app.handle());
             quickconnect::watch(app.handle());
+            #[cfg(target_os = "macos")]
+            macos_session::start(app.handle());
             updates::start(app.handle());
             single_instance::ready(app.handle());
             Ok(())
