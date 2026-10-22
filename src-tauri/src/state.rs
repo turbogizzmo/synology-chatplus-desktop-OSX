@@ -194,7 +194,8 @@ impl Default for Settings {
             minimize_to_tray: true,
             close_to_tray: true,
             external_links: true,
-            automatic_updates: false,
+            // Shared test builds stay current; Settings can still turn checks off.
+            automatic_updates: true,
             include_beta_updates: false,
             desktop_notifications: false,
             notification_preview: NotificationPreview::Sender,
@@ -643,7 +644,7 @@ mod tests {
     fn existing_settings_gain_safe_update_defaults() {
         let settings: Settings =
             serde_json::from_value(serde_json::json!({"theme":"dark"})).unwrap();
-        assert!(!settings.automatic_updates);
+        assert!(settings.automatic_updates);
         assert!(!settings.include_beta_updates);
         assert!(settings.server_url.is_empty());
         assert_eq!(settings.notification_cooldown, 60);

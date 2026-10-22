@@ -59,10 +59,10 @@ HTTP(S) links, redirects and scripted popups may open the default browser when
 external links are enabled; this behavior is not restricted to verified user
 gestures. Query strings may contain sensitive information.
 
-Project links open the public GitHub repository. This repository ships with the
-updater disabled (`updaterEnabled: false`, no public key in `project.json`), so the
-app makes no update checks. If enabled later, checks use GitHub release metadata and
-HTTPS artifact delivery; see [updater behavior](docs/UPDATER.md). DNS, certificate
+Project links open the public GitHub repository. Update checks use this
+repository's GitHub release metadata over HTTPS; an update installs only if its
+signature verifies against the public key in `project.json`. Automatic checks can be
+turned off in Settings; see [updater behavior](docs/UPDATER.md). DNS, certificate
 validation, runtime maintenance and server resources have independent network behavior.
 
 Loopback addresses in development configuration and updater tests are not production
