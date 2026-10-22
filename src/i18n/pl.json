@@ -347,6 +347,7 @@
   "services.notificationsUnsupported": "Ten provider jeszcze nie obsługuje powiadomień pulpitu.",
   "services.nameRequired": "Wpisz nazwę wyświetlaną.",
   "services.urlInvalid": "Wpisz prawidłowy adres HTTP lub HTTPS.",
+  "services.quickconnectHelp": "Możesz też wpisać identyfikator Synology QuickConnect (np. mynas). Aplikacja sama znajdzie i zweryfikuje serwer NAS; po zmianie sieci naciśnij Cmd+R.",
   "services.urlSlack": "Użyj adresu HTTPS Slack w domenie slack.com lub *.slack.com, bez niestandardowego portu.",
   "services.limit": "Można skonfigurować najwyżej 12 usług.",
   "services.draftRemovalHelp": "Zapisany profil zostanie zachowany. Usunięcie zostanie zapisane po wybraniu Zapisz.",

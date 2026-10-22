@@ -347,6 +347,7 @@
   "services.notificationsUnsupported": "此服務供應商目前尚不支援桌面通知。",
   "services.nameRequired": "請輸入顯示名稱。",
   "services.urlInvalid": "請輸入有效的 HTTP 或 HTTPS URL。",
+  "services.quickconnectHelp": "也可以輸入 Synology QuickConnect ID（例如 mynas），App 會自動尋找並驗證您的 NAS；切換網路後請按 Cmd+R。",
   "services.urlSlack": "請使用 slack.com 或 *.slack.com 的 HTTPS URL，且不得自訂連接埠。",
   "services.limit": "最多可設定 12 個服務。",
   "services.draftRemovalHelp": "已儲存的設定檔會保留。選擇「儲存」後才會儲存移除操作。",

@@ -347,6 +347,7 @@
   "services.notificationsUnsupported": "Ce fournisseur ne prend pas encore en charge les notifications de bureau.",
   "services.nameRequired": "Saisissez un nom d’affichage.",
   "services.urlInvalid": "Saisissez une URL HTTP ou HTTPS valide.",
+  "services.quickconnectHelp": "Ou saisissez votre identifiant Synology QuickConnect (par exemple mynas). L’app trouve et vérifie votre NAS automatiquement ; appuyez sur Cmd+R après un changement de réseau.",
   "services.urlSlack": "Utilisez une URL HTTPS Slack sur slack.com ou *.slack.com, sans port personnalisé.",
   "services.limit": "Vous pouvez configurer jusqu’à 12 services.",
   "services.draftRemovalHelp": "Le profil enregistré est conservé. La suppression est enregistrée lorsque vous choisissez Enregistrer.",

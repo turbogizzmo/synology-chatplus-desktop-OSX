@@ -571,10 +571,20 @@ pub fn dispatch(app: &AppHandle, action: Action) -> Result<(), String> {
         Action::About => {
             shell::settings_section(app, "about").map_err(|_| "Could not open About.".into())
         }
-        Action::Reload => crate::services::active(app)
-            .ok_or("Open a service first.")?
-            .reload()
-            .map_err(|_| "Could not reload ChatPlus.".into()),
+        Action::Reload => {
+            let view = crate::services::active(app).ok_or("Open a service first.")?;
+            // A QuickConnect service re-resolves first: Reload is how a laptop that
+            // changed networks finds its NAS again.
+            let settings = state::current(app);
+            if let Some(service) = settings.active() {
+                if crate::quickconnect::target(&service.url).is_some() {
+                    crate::quickconnect::refresh(app, service, true);
+                    return Ok(());
+                }
+            }
+            view.reload()
+                .map_err(|_| "Could not reload ChatPlus.".into())
+        }
         Action::Quit => {
             let _ = app.save_window_state(StateFlags::all());
             app.exit(0);
