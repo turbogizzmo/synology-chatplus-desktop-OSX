@@ -248,6 +248,7 @@ fn https_asset(url: &url::Url, config: &Configuration) -> bool {
             config.owner, config.repository
         ))
 }
+#[cfg(test)]
 pub fn builder<R: Runtime>(
     app: &AppHandle<R>,
     endpoint: url::Url,
@@ -921,9 +922,6 @@ pub fn preference_changed(app: &AppHandle) {
     drop(inner);
     emit(app);
 }
-pub fn install(app: &AppHandle, confirmed: bool) -> Result<(), String> {
-    install_checked(app, confirmed, None)
-}
 pub fn install_for(
     app: &AppHandle,
     confirmed: bool,
@@ -936,6 +934,8 @@ pub fn install_for(
         Some((expected_version, expected_include_beta_updates)),
     )
 }
+// Off Windows, app.restart() never returns, so the trailing Ok(()) is Windows-only.
+#[cfg_attr(not(windows), allow(unreachable_code))]
 fn install_checked(
     app: &AppHandle,
     confirmed: bool,

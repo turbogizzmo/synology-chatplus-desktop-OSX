@@ -82,7 +82,7 @@ export async function renderSettings() {
           <label class="toggle"><input id="desktop-notifications" type="checkbox">${t("notifications.desktop")}</label>
           <small id="notification-permission" role="status">${t("notifications.checkingPermission")}</small>
           <button id="enable-notifications" type="button" class="secondary">${t("notifications.enable")}</button>
-          <button id="notification-settings" type="button" class="secondary" hidden>${t("notifications.windowsSettings")}</button>
+          <button id="notification-settings" type="button" class="secondary" hidden>${/Windows/i.test(navigator.userAgent) ? t("notifications.windowsSettings") : t("notifications.macSettings")}</button>
           <label for="notification-preview">${t("notifications.preview")}</label>
           <select id="notification-preview"><option value="full">${t("notifications.full")}</option><option value="sender">${t("notifications.sender")}</option><option value="generic">${t("notifications.generic")}</option></select>
           <small>${t("notifications.privacyHelp")}</small>
@@ -641,7 +641,11 @@ export async function renderSettings() {
       testButton.disabled = true;
       try {
         await notifications.sendTest(input("notification-sound").checked);
-        status.textContent = t("notifications.testSent");
+        status.textContent = t(
+          /Windows/i.test(navigator.userAgent)
+            ? "notifications.testSent"
+            : "notifications.testSentMac",
+        );
       } catch (error) {
         status.textContent = localizeError(error, "notifications.testError");
       } finally {
@@ -682,8 +686,10 @@ export async function renderSettings() {
         message: localizeError(result.message),
         webview: webviewState,
       });
+      // Windows and macOS both have a native settings page to fix a blocked sender.
       systemButton.hidden =
-        result.state === "enabled" || !/Windows/i.test(navigator.userAgent);
+        result.state === "enabled" ||
+        !/Windows|Macintosh/i.test(navigator.userAgent);
       enableButton.hidden =
         result.state === "enabled" && result.webviewState === "granted";
     };
@@ -726,7 +732,11 @@ export async function renderSettings() {
     });
     systemButton.addEventListener("click", () => {
       void notifications.openSettings().catch(() => {
-        status.textContent = t("notifications.windowsError");
+        status.textContent = t(
+          /Windows/i.test(navigator.userAgent)
+            ? "notifications.windowsError"
+            : "notifications.macError",
+        );
       });
     });
     window.addEventListener("focus", () => {

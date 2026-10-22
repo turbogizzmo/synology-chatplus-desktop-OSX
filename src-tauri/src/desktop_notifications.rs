@@ -477,6 +477,8 @@ fn show(
 pub struct Icons {
     pub normal: tauri::image::Image<'static>,
     pub unread: tauri::image::Image<'static>,
+    /// Windows taskbar overlay; macOS shows a Dock badge count instead.
+    #[cfg_attr(not(windows), allow(dead_code))]
     pub overlay: tauri::image::Image<'static>,
 }
 pub fn icons(app: &AppHandle) {
