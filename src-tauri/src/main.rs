@@ -6,6 +6,10 @@ mod desktop_notifications;
 mod diagnostics;
 mod downloads;
 mod i18n;
+#[cfg(target_os = "macos")]
+mod macos_navigation;
+#[cfg(target_os = "macos")]
+mod macos_notifications;
 mod menu;
 mod native_shortcuts;
 mod navigation;
@@ -121,6 +125,12 @@ fn main() {
             app.manage(services::Lifecycle::default());
             app.manage(desktop_notifications::Service::default());
             desktop_notifications::icons(app.handle());
+            // Ask macOS at startup only when the user already enabled notifications.
+            #[cfg(target_os = "macos")]
+            macos_notifications::init(
+                app.handle(),
+                state::current(app.handle()).desktop_notifications,
+            );
             menu::create(app.handle())?;
             tray::create(app.handle())?;
             // Configured Windows startup always owns Main, even when Settings is requested.
@@ -143,16 +153,20 @@ fn main() {
     // official forwarding/exit path without racing its mutex/window creation.
     #[cfg(windows)]
     drop(startup_guard);
-    app.run(|app, event| {
-        if let tauri::RunEvent::ExitRequested {
+    app.run(|app, event| match event {
+        tauri::RunEvent::ExitRequested {
             code: None, api, ..
-        } = event
-        {
+        } => {
             // Swiph3l: ChatPlus Desktop must run as a single instance.
             // Allow secondary single-instance launches to exit when no window exists.
             if !app.windows().is_empty() {
                 api.prevent_exit();
             }
         }
+        // A Dock click or Finder/Spotlight relaunch reaches the running process as Reopen,
+        // not as a second instance; restore the main window that close-to-tray hid.
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => single_instance::activate(app),
+        _ => {}
     });
 }

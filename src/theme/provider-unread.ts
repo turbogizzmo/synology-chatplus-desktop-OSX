@@ -16,6 +16,19 @@ export interface ProviderHostWindow {
   __chatplusAcceptRead?: (arrivals: number[]) => void;
   __chatplusCompleteArrival?: (arrival: number) => void;
   chrome?: { webview?: { postMessage: (value: unknown) => void } };
+  webkit?: {
+    messageHandlers?: {
+      chatplusBridge?: { postMessage: (value: unknown) => void };
+    };
+  };
+}
+
+// WebView2 (Windows) or the shell's WKScriptMessageHandler (macOS); resolved per
+// send because macOS registers its handler only after the view is created.
+export function nativeBridge(
+  host: ProviderHostWindow,
+): { postMessage: (value: unknown) => void } | undefined {
+  return host.chrome?.webview ?? host.webkit?.messageHandlers?.chatplusBridge;
 }
 
 export function installUnreadAdapter(
@@ -54,9 +67,10 @@ export function installUnreadAdapter(
     pendingRead = null;
   };
   const post = (payload: object): boolean => {
-    if (disposed || !host.chrome?.webview) return false;
+    const bridge = nativeBridge(host);
+    if (disposed || !bridge) return false;
     try {
-      host.chrome.webview.postMessage(JSON.stringify(payload));
+      bridge.postMessage(JSON.stringify(payload));
       return true;
     } catch {
       // Navigation can revoke the native bridge. A later observation may retry;

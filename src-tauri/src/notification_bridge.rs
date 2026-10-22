@@ -1,16 +1,23 @@
 //! Browser notification events through WebView2; no remote Tauri IPC capability.
+#[cfg(target_os = "macos")]
+use tauri::Manager;
 #[cfg(windows)]
 use tauri::{Emitter, Manager};
-#[cfg(any(windows, test))]
+#[cfg(target_os = "macos")]
+#[path = "webkit_bridge.rs"]
+mod webkit;
+#[cfg(target_os = "macos")]
+pub use webkit::attach;
+#[cfg(any(windows, target_os = "macos", test))]
 const EVENT_HISTORY_LIMIT: usize = 256;
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 struct EventHistory<T> {
     events: std::collections::VecDeque<(T, u64)>,
     read_generations: std::collections::HashMap<u64, u64>,
     next: u64,
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 impl<T> Default for EventHistory<T> {
     fn default() -> Self {
         Self {
@@ -20,7 +27,7 @@ impl<T> Default for EventHistory<T> {
         }
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 impl<T: PartialEq> EventHistory<T> {
     fn observe(&mut self, event: T) -> (u64, bool) {
         if let Some((_, token)) = self.events.iter().find(|(seen, _)| *seen == event) {
@@ -134,7 +141,7 @@ pub fn trusted_origin(server: &str, sender: &str) -> bool {
         && server.origin() == sender.origin()
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 fn viewing_query(tag: &str, title: &str, arrival: u64) -> String {
     let payload = serde_json::json!({
         "tag": tag.chars().take(512).collect::<String>(),
@@ -200,13 +207,13 @@ fn notification_dispatch<T, D, E>(
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 struct PendingQueries<T> {
     next: u64,
     values: std::collections::HashMap<u64, T>,
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 impl<T> Default for PendingQueries<T> {
     fn default() -> Self {
         Self {
@@ -216,7 +223,7 @@ impl<T> Default for PendingQueries<T> {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 impl<T> PendingQueries<T> {
     fn insert(&mut self, value: T) -> u64 {
         self.next += 1;
@@ -229,7 +236,7 @@ impl<T> PendingQueries<T> {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 #[derive(Clone)]
 struct PendingNotification {
     service: crate::providers::ServiceConfig,
@@ -244,7 +251,7 @@ struct PendingNotification {
     provider_silent: bool,
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 impl PendingNotification {
     fn finish(&self, app: &tauri::AppHandle, provider_viewed: bool) -> bool {
         // Swiph3l: Removed/disabled services and acknowledged events are terminal
@@ -351,7 +358,7 @@ struct NotificationActivation {
     generation: u64,
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn current_bridge(app: &tauri::AppHandle, id: &str, bridge_id: u64) -> bool {
     app.state::<crate::desktop_notifications::Service>()
         .0
@@ -916,7 +923,7 @@ fn parse_unread(json: &str) -> Option<UnreadObservation> {
         provider_zero,
     })
 }
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 pub fn attach(
     _: &tauri::AppHandle,
     _: &tauri::Webview,

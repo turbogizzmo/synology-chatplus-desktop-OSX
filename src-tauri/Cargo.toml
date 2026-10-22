@@ -40,6 +40,15 @@ webview2-com = "0.38"
 windows = { version = "0.61", features = ["UI_Notifications", "Win32_Foundation", "Win32_Security", "Win32_System_Threading", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
 winreg = "0.55"
 
+# Same objc2 stack wry already links; used for the WKScriptMessageHandler bridge and
+# UNUserNotificationCenter delivery.
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6.2"
+objc2 = "0.6.4"
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSError", "NSObject", "NSString"] }
+objc2-user-notifications = { version = "0.3.2", default-features = false, features = ["std", "bitflags", "block2", "UNNotification", "UNNotificationContent", "UNNotificationRequest", "UNNotificationResponse", "UNNotificationSettings", "UNNotificationSound", "UNNotificationTrigger", "UNUserNotificationCenter"] }
+objc2-web-kit = { version = "0.3.2", default-features = false, features = ["std", "objc2-app-kit", "block2", "WKFrameInfo", "WKNavigationAction", "WKNavigationDelegate", "WKScriptMessage", "WKScriptMessageHandler", "WKSecurityOrigin", "WKUserContentController", "WKWebView", "WKWebViewConfiguration"] }
+
 [dev-dependencies]
 base64 = "0.23.1"
 minisign = "0.9.1"
