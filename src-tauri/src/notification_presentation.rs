@@ -1,12 +1,16 @@
 //! Toast text and provider/color artwork. Message content is never written to disk.
+#[cfg(any(windows, test))]
+use crate::providers::NotificationColor;
 use crate::{
-    providers::{NotificationColor, ProviderId, ServiceConfig},
+    providers::{ProviderId, ServiceConfig},
     state::{Language, NotificationPreview},
 };
 
 pub struct Presentation {
     pub title: String,
     pub body: String,
+    /// Shown as WinRT toast attribution; macOS notifications have no such line.
+    #[cfg_attr(not(windows), allow(dead_code))]
     pub attribution: String,
 }
 

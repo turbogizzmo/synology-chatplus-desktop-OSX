@@ -153,7 +153,7 @@ async function fixture(options = {}) {
   const context = {
     window,
     document,
-    navigator: { userAgent: "Windows" },
+    navigator: { userAgent: options.userAgent ?? "Windows" },
     structuredClone,
     URL,
     URLSearchParams,
@@ -183,12 +183,14 @@ async function fixture(options = {}) {
         return target;
       }
       if (command === "get_notification_permission")
-        return {
-          state: "enabled",
-          granted: true,
-          webviewState: "granted",
-          message: "Fixture",
-        };
+        return (
+          options.permission ?? {
+            state: "enabled",
+            granted: true,
+            webviewState: "granted",
+            message: "Fixture",
+          }
+        );
       if (command === "get_update_state") {
         await options.beforeUpdateReady?.({ document, window, listeners });
         return structuredClone(updateState);
@@ -1581,4 +1583,35 @@ test("a native reconciliation failure after Save retains the committed removal",
     f.document.getElementById("status").textContent,
     /Restart to apply service changes/,
   );
+});
+
+test("macOS offers its own notification settings when macOS blocks the app", async () => {
+  const f = await fixture({
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+    permission: {
+      state: "blocked",
+      granted: false,
+      webviewState: "unknown",
+      message: "Fixture",
+    },
+  });
+  await f.flush();
+  const button = f.document.getElementById("notification-settings");
+  assert.equal(button.hidden, false);
+  assert.equal(button.textContent, "Open macOS notification settings");
+  button.click();
+  await f.flush();
+  assert.ok(
+    f.calls.some((call) => call.command === "open_notification_settings"),
+  );
+});
+
+test("an enabled macOS sender hides the system settings shortcut", async () => {
+  const f = await fixture({
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+  });
+  await f.flush();
+  assert.equal(f.document.getElementById("notification-settings").hidden, true);
 });
