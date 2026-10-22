@@ -1,0 +1,89 @@
+import { t } from "../i18n";
+// Swiph3l: Form and native-menu removals share one confirmation, so only an explicitly accepted dialog removes a profile entry.
+export function confirmServiceRemoval(
+  name: string,
+  options: { help?: string; signal?: AbortSignal } = {},
+): Promise<boolean> {
+  if (options.signal?.aborted) return Promise.resolve(false);
+  if (document.querySelector("dialog[open]")) return Promise.resolve(false);
+  const previous = document.activeElement as HTMLElement | null;
+  const dialog = document.createElement("dialog");
+  dialog.className = "confirmation-dialog";
+  dialog.setAttribute("aria-labelledby", "remove-service-title");
+  dialog.setAttribute("aria-describedby", "remove-service-description");
+  const title = document.createElement("h2");
+  title.id = "remove-service-title";
+  title.textContent = t("services.removeQuestion");
+  const description = document.createElement("p");
+  description.id = "remove-service-description";
+  description.textContent = t("services.removeConfirm", {
+    name: name || t("services.thisService"),
+  });
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "secondary";
+  cancel.textContent = t("common.cancel");
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "secondary danger";
+  remove.textContent = t("services.remove");
+  actions.append(cancel, remove);
+  const content = document.createElement("div");
+  content.className = "confirmation-dialog-content";
+  content.append(title, description);
+  if (options.help) {
+    const help = document.createElement("p");
+    help.className = "confirmation-dialog-help";
+    help.id = "remove-service-help";
+    help.textContent = options.help;
+    content.append(help);
+    dialog.setAttribute(
+      "aria-describedby",
+      "remove-service-description remove-service-help",
+    );
+  }
+  dialog.append(content, actions);
+  document.body.append(dialog);
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    const finish = (accepted: boolean) => {
+      if (finished) return;
+      finished = true;
+      options.signal?.removeEventListener("abort", abort);
+      if (dialog.open) dialog.close();
+      dialog.remove();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+      resolve(accepted);
+    };
+    const abort = () => finish(false);
+    options.signal?.addEventListener("abort", abort, { once: true });
+    cancel.addEventListener("click", () => finish(false));
+    remove.addEventListener("click", () => finish(true));
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      finish(false);
+    });
+    dialog.addEventListener("close", () => finish(false));
+    dialog.addEventListener("click", (event) => {
+      if (event.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      if (
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      )
+        finish(false);
+    });
+    try {
+      dialog.showModal();
+      cancel.focus();
+    } catch (error) {
+      options.signal?.removeEventListener("abort", abort);
+      dialog.remove();
+      reject(error);
+    }
+  });
+}

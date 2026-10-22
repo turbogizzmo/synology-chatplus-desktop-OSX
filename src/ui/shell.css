@@ -1,0 +1,1014 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #20252c;
+  background: #f3f5f8;
+  color-scheme: light;
+  --surface: #fff;
+  --border: #cbd1d9;
+  --muted: #586474;
+  --accent: #2563c5;
+  --accent-foreground: #fff;
+  --danger: #b42332;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #edf1f7;
+  background: #0f1115;
+  --surface: #191d23;
+  --border: #363d47;
+  --muted: #aab2bd;
+  --accent: #397edb;
+  --accent-foreground: #101318;
+  --danger: #ff8992;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    color: #edf1f7;
+    background: #0f1115;
+    --surface: #191d23;
+    --border: #363d47;
+    --muted: #aab2bd;
+    --accent: #397edb;
+    --accent-foreground: #101318;
+    --danger: #ff8992;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px 24px;
+}
+
+body.services-page {
+  padding: 0;
+  overflow: hidden;
+}
+.services-page main {
+  margin: 0;
+  max-width: none;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 30px;
+}
+.services-page main[aria-busy="true"] > p {
+  display: none;
+}
+.workspace-empty {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  text-align: center;
+}
+.workspace-empty h1 {
+  font-size: 16px;
+}
+.service-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding: 8px 7px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+}
+.rail-brand {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+.rail-services,
+.rail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.rail-services {
+  position: relative;
+  min-height: 0;
+  width: 46px;
+  padding: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+.rail-services button {
+  touch-action: none;
+  user-select: none;
+}
+.rail-services img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.rail-services.rail-reordering,
+.rail-reordering button {
+  cursor: grabbing;
+}
+.rail-services button.rail-dragging {
+  transform: translateY(var(--rail-drag-offset, 0px));
+  z-index: 3;
+  opacity: 0.85;
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+.rail-drop-marker {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  height: 0;
+  border-top: 2px dashed var(--accent);
+  pointer-events: none;
+  z-index: 2;
+}
+.rail-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.service-rail button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  position: relative;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.service-rail button:hover {
+  filter: none;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.service-rail button:active {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+}
+.service-rail button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+.service-rail button[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.service-rail button[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+.service-rail button:focus-visible {
+  outline: 2px dashed currentColor;
+  outline-offset: 1px;
+}
+.service-rail button:disabled {
+  opacity: 0.5;
+  filter: grayscale(0.35);
+}
+.provider-icon {
+  display: block;
+  object-fit: contain;
+  transform: scale(0.92);
+}
+:root[data-theme="dark"] .provider-icon-mattermost {
+  filter: brightness(0) invert(1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .provider-icon-mattermost {
+    filter: brightness(0) invert(1);
+  }
+}
+[aria-pressed="true"] > .provider-icon {
+  transform: none;
+}
+.rail-icon,
+.rail-icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+.service-rail .has-unread::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 8px;
+  height: 8px;
+  background: var(--notification-color, var(--accent));
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--notification-color, var(--accent));
+  color: var(--notification-foreground, var(--accent-foreground));
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rail-unread-count {
+  position: absolute;
+  right: 0;
+  top: 0;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0 3px;
+  border: 2px solid var(--surface);
+  border-radius: 9px;
+  font-size: 9px;
+}
+.app-footer {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 30px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  padding: 0 10px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+}
+.footer-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.footer-version {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.footer-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.app-footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 24px;
+  height: 24px;
+  padding: 1px 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+.app-footer button:hover:enabled {
+  filter: none;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.app-footer button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: none;
+}
+.app-footer button:focus-visible {
+  outline-offset: -1px;
+}
+.app-footer .footer-update {
+  display: block;
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-color: var(--border);
+}
+.footer-status-region {
+  flex: 1;
+  min-width: 0;
+}
+.app-footer .footer-status {
+  width: 100%;
+  justify-content: flex-start;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.app-footer .footer-status:disabled {
+  opacity: 1;
+}
+.footer-icon,
+.footer-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+@media (max-width: 1000px) {
+  .app-footer {
+    gap: 8px;
+  }
+  .footer-actions {
+    gap: 2px;
+  }
+}
+
+.confirmation-dialog {
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 20px;
+  margin: auto;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px #0004;
+}
+.confirmation-dialog::backdrop {
+  background: #0007;
+}
+.confirmation-dialog .actions {
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.confirmation-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.confirmation-dialog-content {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.confirmation-dialog .actions {
+  flex-shrink: 0;
+}
+
+main {
+  max-width: 580px;
+  margin: auto;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.brand {
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+h1 {
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 0;
+}
+
+h2,
+legend {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+h2 {
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 10px 0;
+}
+
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 20px;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="url"],
+select,
+textarea,
+.service-control {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: inherit;
+}
+
+.service-field {
+  margin-bottom: 14px;
+}
+.service-field label {
+  margin-bottom: 5px;
+}
+.service-control {
+  font-size: inherit;
+  height: 32px;
+}
+.service-control:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+.service-control:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.service-config legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.service-config:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.experimental-badge {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 10px;
+  font-weight: 400;
+}
+.service-options {
+  margin-top: 2px;
+  margin-bottom: 14px;
+}
+.service-provider-info {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+}
+.service-config h3 {
+  margin: 0 0 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.service-provider-info p {
+  margin: 0;
+}
+.service-provider-info .service-secondary-help {
+  margin-top: 8px;
+}
+.service-removal {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.service-removal small {
+  margin: 0 0 10px;
+}
+.service-removal button.danger,
+.confirmation-dialog button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: transparent;
+}
+.service-removal button.danger:hover,
+.confirmation-dialog button.danger:hover {
+  filter: none;
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+
+small,
+.subtitle,
+.credits,
+footer {
+  color: var(--muted);
+}
+
+small {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.preference-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.preference-row label {
+  margin: 0;
+}
+
+.preference-row select {
+  width: 180px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+}
+
+.toggle:last-child {
+  margin-bottom: 0;
+}
+
+.toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+button {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 5px 14px;
+  min-height: 30px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: inherit;
+}
+
+button.text-button {
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  padding: 0;
+  min-height: 24px;
+}
+
+button:hover {
+  filter: brightness(0.94);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid #69a6ff;
+  outline-offset: 2px;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.form-footer button {
+  min-width: 84px;
+}
+
+#save-feedback {
+  min-height: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #2e9f47;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+#save-feedback.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 11px;
+}
+
+#status {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+#status:empty,
+[hidden] {
+  display: none !important;
+}
+
+.connect-heading {
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.setup-page .page-header {
+  margin-bottom: 16px;
+}
+
+.setup-page fieldset {
+  margin-bottom: 16px;
+}
+
+.setup-page .form-footer {
+  padding-top: 0;
+  border: 0;
+}
+
+.setup-page footer {
+  margin-top: 12px;
+}
+
+.about-page .page-header {
+  margin-bottom: 14px;
+}
+
+.subtitle {
+  font-size: 12px;
+  margin: 3px 0 0;
+}
+
+.about-description {
+  margin: 0 0 10px;
+}
+
+.about-notice {
+  margin: 0 0 14px;
+}
+
+.credits {
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.actions button {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+details {
+  margin-top: 12px;
+}
+
+summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.technical-details {
+  padding: 14px 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 5px 10px;
+  font-size: 12px;
+  margin: 12px 0;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.license-section {
+  margin-top: 16px;
+}
+
+.license-section h2 {
+  margin-bottom: 4px;
+}
+
+.license-details {
+  margin-top: 7px;
+}
+
+.license-details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 12px;
+}
+
+.about-footer {
+  display: block;
+  line-height: 1.5;
+  margin-top: 20px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.license-document {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.6 ui-monospace,
+    monospace;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.settings-tabs button {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 0;
+  padding: 6px 10px;
+  border-bottom: 2px solid transparent;
+}
+
+.settings-tabs button[aria-pressed="true"] {
+  color: inherit;
+  border-bottom-color: var(--accent);
+}
+
+.settings-page:not(.setup-page) fieldset {
+  margin-bottom: 14px;
+}
+
+#notification-permission {
+  margin-bottom: 18px;
+}
+
+.update-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.release-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+
+/* Swiph3l: Settings owns the scroller. Sticky actions need the whole Updates pane as their containing block, or preferences push them below the fold on narrow windows. */
+.settings-page #update-details {
+  display: contents;
+}
+
+.settings-page .update-actions {
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 6px 0;
+  background: var(--surface);
+}
+
+.update-page {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.update-page #app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.update-page .page-header,
+.update-page .update-summary,
+.update-page #app > .actions {
+  flex-shrink: 0;
+}
+
+.update-page .page-header {
+  margin-bottom: 14px;
+}
+
+.update-summary p {
+  margin: 8px 0;
+}
+.update-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+.update-summary-heading h2 {
+  margin: 0;
+}
+.update-phase {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.update-phase[data-phase="error"] {
+  color: var(--danger);
+}
+.update-metadata {
+  /* Each metadata wrapper owns its label/value grid; the outer dl must not
+     place those rows into the generic definition-list columns. */
+  display: block;
+  margin: 0;
+  font-size: 12px;
+}
+.update-metadata > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 150px) minmax(0, 1fr);
+  gap: 6px 14px;
+  margin-bottom: 6px;
+}
+.update-metadata dt {
+  color: var(--muted);
+}
+.update-metadata dt,
+.update-metadata dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.update-metadata dd {
+  margin: 0;
+}
+#update-message,
+.update-phase {
+  overflow-wrap: anywhere;
+}
+#update-preference-draft,
+#update-settings-warning {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.update-page #update-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Swiph3l: The standalone window has no Settings scroller; give notes the remaining height so long metadata cannot push update/restart controls offscreen. */
+.update-page #release-notes {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.update-page #notes-heading {
+  flex-shrink: 0;
+  margin: 12px 0 8px;
+}
+
+.update-page .release-notes {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.update-page .release-notes:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.update-page .update-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.update-page #app > .actions {
+  margin-top: 10px;
+}
+
+@media (max-height: 520px) {
+  .update-page {
+    padding: 12px 20px;
+  }
+  .update-page .page-header {
+    margin-bottom: 10px;
+  }
+  .update-page #notes-heading {
+    margin-top: 8px;
+  }
+  .update-page .update-actions {
+    padding-top: 8px;
+  }
+  .update-page #app > .actions {
+    margin-top: 8px;
+  }
+}
+
+progress {
+  width: 100%;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+[hidden] {
+  display: none !important;
+}

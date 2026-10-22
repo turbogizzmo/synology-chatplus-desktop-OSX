@@ -1,0 +1,284 @@
+use crate::state::{self, Theme};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+
+pub fn is_foreground(app: &AppHandle) -> bool {
+    app.get_window("main").is_some_and(|window| {
+        foreground_state(
+            frame_has_focus(&window),
+            window.is_visible().unwrap_or(false),
+            window.is_minimized().unwrap_or(true),
+        )
+    })
+}
+
+pub(crate) fn foreground_state(focused: bool, visible: bool, minimized: bool) -> bool {
+    // Swiph3l: WebView focus may survive while ChatPlus is minimized, so an active
+    // conversation cannot be treated as read without top-level window visibility.
+    focused && visible && !minimized
+}
+
+fn frame_has_focus(window: &tauri::Window) -> bool {
+    #[cfg(windows)]
+    {
+        // A child WebView owns keyboard focus, so Tao's frame focus flag can be
+        // false even while this native top-level window is in the foreground.
+        window.hwnd().is_ok_and(|hwnd| unsafe {
+            windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow() == hwnd
+        })
+    }
+    #[cfg(not(windows))]
+    {
+        window.is_focused().unwrap_or(false)
+    }
+}
+
+pub fn focus(window: &tauri::Window) -> tauri::Result<()> {
+    if !window.is_visible()? {
+        window.show()?;
+    }
+    if window.is_minimized()? {
+        window.unminimize()?;
+    }
+    if !frame_has_focus(window) {
+        window.set_focus()?;
+    }
+    if window.label() == "main" {
+        if let Some(view) = crate::services::active(window.app_handle()) {
+            view.set_focus()?;
+        }
+        crate::unread::sync_presentation(window.app_handle());
+    }
+    Ok(())
+}
+
+pub fn activate_notification(app: &AppHandle, service_id: Option<&str>) -> Result<(), String> {
+    // Swiph3l: Restore the native frame before focusing its provider; a toast click routes the existing instance and never marks it read.
+    open(app)?;
+    let settings = state::current(app);
+    if let Some(id) = notification_destination(&settings, service_id) {
+        // The restored active service needs no preference write. Its provider
+        // click remains usable even when an unchanged settings file is read-only.
+        if settings.active_service.as_deref() != Some(id) {
+            crate::services::activate(app, id)?;
+        }
+    }
+    Ok(())
+}
+
+fn notification_destination<'a>(
+    settings: &state::Settings,
+    service_id: Option<&'a str>,
+) -> Option<&'a str> {
+    service_id.filter(|id| settings.services.iter().any(|s| s.id == *id && s.enabled))
+}
+
+pub fn show_main_window(app: &AppHandle) -> Result<bool, String> {
+    let Some(window) = app.get_window("main") else {
+        // First run has only the provider picker. A secondary launch restores
+        // that existing window without creating a second onboarding session.
+        if !state::current(app).onboarding_completed {
+            if let Some(settings) = app.get_webview_window("settings") {
+                focus(&settings.as_ref().window())
+                    .map_err(|_| "Could not focus ChatPlus.".to_string())?;
+                return Ok(true);
+            }
+        }
+        return Ok(false);
+    };
+    focus(&window).map_err(|_| "Could not focus ChatPlus.".to_string())?;
+    if !frame_has_focus(&window) {
+        // Windows can refuse foreground activation after later user input.
+        let _ = window.request_user_attention(Some(tauri::UserAttentionType::Informational));
+    }
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "[single-instance] main window restored: visible={} minimized={} focused={}",
+        window.is_visible().unwrap_or(false),
+        window.is_minimized().unwrap_or(true),
+        frame_has_focus(&window),
+    );
+    Ok(true)
+}
+
+pub fn open(app: &AppHandle) -> Result<(), String> {
+    if show_main_window(app)? {
+        return Ok(());
+    }
+    let settings = state::current(app);
+    if !settings.onboarding_completed {
+        return crate::shell::onboarding(app).map_err(|_| "Could not open setup.".into());
+    }
+    let window = WebviewWindowBuilder::new(
+        app,
+        "main",
+        WebviewUrl::App("index.html?page=services".into()),
+    )
+    .visible(false)
+    .title("ChatPlus Desktop")
+    // Swiph3l: Leave room for the native title/menu frame on 1366x768 laptops; saved window geometry still restores normally.
+    .inner_size(1280., 680.)
+    .min_inner_size(900., 600.)
+    .theme(settings.theme.native())
+    .on_navigation(crate::navigation::local_settings)
+    .build()
+    .map_err(|_| "Could not create desktop window.")?;
+    crate::native_shortcuts::attach(app, window.as_ref())
+        .map_err(|_| "Could not register desktop shortcuts.")?;
+    crate::services::show(app)?;
+    apply_theme(app)?;
+    show_main_window(app)?
+        .then_some(())
+        .ok_or("Could not show ChatPlus.")?;
+    let handle = app.clone();
+    let event_window = window.clone();
+    window.on_window_event(move |event| match event {
+        WindowEvent::CloseRequested { api, .. } => {
+            let _ = handle.save_window_state(StateFlags::all());
+            if state::current(&handle).close_to_tray {
+                if event_window.hide().is_ok() {
+                    api.prevent_close();
+                    crate::unread::sync_presentation(&handle);
+                }
+            } else {
+                handle.exit(0);
+            }
+        }
+        WindowEvent::Resized(_)
+            if state::current(&handle).minimize_to_tray
+                && event_window.is_minimized().unwrap_or(false) =>
+        {
+            let _ = event_window.hide();
+            crate::unread::sync_presentation(&handle);
+        }
+        WindowEvent::Resized(_) => {
+            crate::services::layout(&handle);
+            crate::unread::sync_presentation(&handle);
+        }
+        WindowEvent::Focused(_) => crate::unread::sync_presentation(&handle),
+        WindowEvent::ThemeChanged(theme)
+            if matches!(state::current(&handle).theme, Theme::System) =>
+        {
+            let color = if *theme == tauri::Theme::Dark {
+                tauri::window::Color(15, 17, 21, 255)
+            } else {
+                tauri::window::Color(255, 255, 255, 255)
+            };
+            let _ = event_window.set_background_color(Some(color));
+        }
+        _ => {}
+    });
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_visibility_distinguishes_foreground_from_minimized_hidden_and_background() {
+        assert!(foreground_state(true, true, false));
+        assert!(!foreground_state(true, true, true));
+        assert!(!foreground_state(true, false, false));
+        assert!(!foreground_state(false, true, false));
+    }
+
+    #[test]
+    fn notification_activation_targets_its_origin_and_ignores_removed_services() {
+        for provider in [
+            crate::providers::ProviderId::SynologyChatplus,
+            crate::providers::ProviderId::SynologyChat,
+            crate::providers::ProviderId::Discord,
+        ] {
+            let mut settings = state::Settings::default();
+            settings.services = ["selected", "origin"]
+                .into_iter()
+                .map(|id| crate::providers::ServiceConfig {
+                    id: id.into(),
+                    provider,
+                    name: id.into(),
+                    url: "https://example.com/chat/".into(),
+                    enabled: true,
+                    notifications: true,
+                    notification_color: crate::providers::NotificationColor::Auto,
+                })
+                .collect();
+            for active in ["origin", "selected"] {
+                settings.active_service = Some(active.into());
+                assert_eq!(
+                    notification_destination(&settings, Some("origin")),
+                    Some("origin")
+                );
+                assert_eq!(
+                    settings.active_service.as_deref(),
+                    Some(active),
+                    "routing alone must not acknowledge or mutate selection"
+                );
+            }
+            assert_eq!(notification_destination(&settings, Some("missing")), None);
+            assert_eq!(notification_destination(&settings, None), None);
+            settings.services[1].enabled = false;
+            assert_eq!(notification_destination(&settings, Some("origin")), None);
+        }
+    }
+}
+pub fn apply_theme(app: &AppHandle) -> Result<(), String> {
+    let settings = state::current(app);
+    for window in app.webview_windows().values() {
+        if window.label() == "main" {
+            continue;
+        }
+        crate::shell::theme_window(window, &settings.theme)
+            .map_err(|_| "Could not update window theme.")?;
+        window
+            .eval(&format!(
+                "document.documentElement.dataset.theme = {}",
+                serde_json::to_string(&settings.theme).unwrap()
+            ))
+            .map_err(|_| "Could not update page theme.")?;
+    }
+    if let Some(w) = app.get_window("main") {
+        #[cfg(not(windows))]
+        let theme = match settings.theme {
+            Theme::System => None,
+            Theme::Dark => Some(tauri::Theme::Dark),
+            Theme::Light => Some(tauri::Theme::Light),
+        };
+        #[cfg(not(windows))]
+        w.set_theme(theme)
+            .map_err(|_| "Could not apply window theme.")?;
+        // Swiph3l: Live set_theme on Windows can destabilize the native menu bar.
+        // Keep the frame stable and apply theme through page/background updates.
+        let dark = match settings.theme {
+            Theme::Dark => true,
+            Theme::Light => false,
+            Theme::System => w.theme().ok() == Some(tauri::Theme::Dark),
+        };
+        w.set_background_color(Some(if dark {
+            tauri::window::Color(15, 17, 21, 255)
+        } else {
+            tauri::window::Color(255, 255, 255, 255)
+        }))
+        .map_err(|_| "Could not apply background.")?;
+        for service in &settings.services {
+            if !service.provider.definition().theme {
+                continue;
+            }
+            let Some(view) = app.get_webview(&crate::services::label(&service.id)) else {
+                continue;
+            };
+            view.eval(&format!(
+                "window.__chatplusSetTheme?.({})",
+                serde_json::to_string(&settings.theme).unwrap()
+            ))
+            .map_err(|_| "Could not apply page theme.")?;
+        }
+        if let Some(rail) = app.get_webview("main") {
+            let _ = rail.eval(&format!(
+                "document.documentElement.dataset.theme = {}",
+                serde_json::to_string(&settings.theme).unwrap()
+            ));
+        }
+    }
+    Ok(())
+}
