@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatPlus Desktop for macOS</title>
+<meta name="description" content="Unofficial macOS desktop app for Synology ChatPlus and Synology Chat. Sign in with just your QuickConnect ID.">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #16181d; --muted: #5b6270;
+    --line: #e3e6ea; --accent: #1c73e5; --accent-text: #ffffff; --code: #eef1f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #171a21; --text: #e9ecf1; --muted: #9aa3b2;
+      --line: #262b35; --accent: #3b8cf5; --accent-text: #ffffff; --code: #1f2430;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 48px 20px 64px; }
+  header { text-align: center; }
+  header img { width: 96px; height: 96px; border-radius: 22px; }
+  h1 { font-size: 32px; line-height: 1.2; margin: 16px 0 8px; letter-spacing: -0.01em; }
+  .lead { color: var(--muted); font-size: 18px; margin: 0 auto 28px; max-width: 520px; }
+  .download {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent); color: var(--accent-text); text-decoration: none;
+    font-weight: 600; font-size: 18px; padding: 14px 28px; border-radius: 12px;
+  }
+  .download:hover { filter: brightness(1.08); }
+  .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  section {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px; margin-top: 24px;
+  }
+  h2 { font-size: 19px; margin: 0 0 12px; }
+  ol, ul { margin: 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  li::marker { color: var(--muted); }
+  code {
+    background: var(--code); border-radius: 6px; padding: 2px 6px;
+    font: 14px ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre {
+    background: var(--code); border-radius: 8px; padding: 12px 14px; margin: 10px 0 0;
+    overflow-x: auto; font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .note { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
+  a { color: var(--accent); }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 36px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <h1>ChatPlus Desktop for macOS</h1>
+    <p class="lead">A native Mac app for Synology ChatPlus and Synology Chat. Sign in with just your QuickConnect ID; no server addresses to figure out.</p>
+    <a class="download" href="https://github.com/turbogizzmo/synology-chatplus-desktop-OSX/releases/latest/download/ChatPlus-Desktop-macOS.dmg">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+      Download for Mac
+    </a>
+    <p class="meta">Beta · Apple Silicon and Intel · macOS 11 or later · <a href="https://github.com/turbogizzmo/synology-chatplus-desktop-OSX/releases">All versions</a></p>
+  </header>
+
+  <section>
+    <h2>Install</h2>
+    <ol>
+      <li>Open the downloaded <code>.dmg</code> and drag <strong>ChatPlus Desktop</strong> into <strong>Applications</strong>.</li>
+      <li>Open it. Because this beta isn’t signed by Apple, macOS will say it can’t verify the developer. Click <strong>Done</strong>.</li>
+      <li>Go to <strong>System Settings › Privacy &amp; Security</strong>, scroll down, and click <strong>Open Anyway</strong> next to ChatPlus Desktop. You only need to do this once.</li>
+    </ol>
+    <p class="note">Comfortable with Terminal? This does the same as step 3:</p>
+    <pre>xattr -dr com.apple.quarantine "/Applications/ChatPlus Desktop.app"</pre>
+  </section>
+
+  <section>
+    <h2>Set up</h2>
+    <ol>
+      <li>Choose <strong>Synology ChatPlus</strong> (or Synology Chat).</li>
+      <li>Enter your <strong>QuickConnect ID</strong>, for example <code>mynas</code>. You can also enter your NAS address, such as <code>https://nas.example.com:5001</code>.</li>
+      <li>Sign in with your DSM account and tick <strong>Stay signed in</strong>.</li>
+    </ol>
+    <p class="note">On a laptop, the app finds your NAS again by itself when you move between home and the office.</p>
+  </section>
+
+  <section>
+    <h2>Good to know</h2>
+    <ul>
+      <li>This is a beta for testing. If something breaks, please <a href="https://github.com/turbogizzmo/synology-chatplus-desktop-OSX/issues/new/choose">report an issue</a>.</li>
+      <li>Because the beta isn’t signed, desktop notifications appear under “Script Editor”, and macOS may ask once to allow them.</li>
+      <li>Moving between your home network and the internet can ask you to sign in again.</li>
+      <li>No ads and no tracking. Your messages and password never pass through this app’s developers.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Unofficial app, not affiliated with or endorsed by Synology.<br>
+    Open source under GPL-3.0 · <a href="https://github.com/turbogizzmo/synology-chatplus-desktop-OSX">Source code</a> · Based on ChatPlus Desktop by Swiph3l.
+  </footer>
+</main>
+</body>
+</html>
