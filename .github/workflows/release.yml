@@ -1,0 +1,54 @@
+name: macOS release
+# Push a tag matching the app version (e.g. v0.6.1) to publish a release that
+# installed apps pick up through the built-in updater.
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 (Node 24)
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          # Build the event commit; a tag moved after the event fails identity checks.
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6 (Node 24)
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - name: Validate tag, versions and update signing key
+        run: node scripts/release-identity.mjs
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - name: Build signed universal app
+        run: npm run tauri build -- --target universal-apple-darwin --bundles app
+        env:
+          CHATPLUS_RELEASE_BUILD: "1"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - name: Package DMG, updater archive and manifest
+        run: scripts/package-macos.sh
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" release-artifacts/* \
+            --title "ChatPlus Desktop ${GITHUB_REF_NAME#v} for macOS" \
+            --generate-notes --verify-tag "${prerelease[@]}"

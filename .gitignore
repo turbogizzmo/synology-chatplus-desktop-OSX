@@ -46,3 +46,4 @@ release-artifacts/
 *.rpm
 src-tauri/bom.json
 src-tauri/*.cdx.json
+release-artifacts/
