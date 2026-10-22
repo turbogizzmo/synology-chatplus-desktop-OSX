@@ -187,6 +187,7 @@
   "menu.serviceSettings": "服務設定…",
   "menu.remove": "移除服務…",
   "menu.file": "檔案",
+  "menu.edit": "編輯",
   "menu.openChatPlus": "開啟 ChatPlus",
   "menu.reload": "重新載入 ChatPlus",
   "menu.quit": "結束",

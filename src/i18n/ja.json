@@ -187,6 +187,7 @@
   "menu.serviceSettings": "サービスの設定…",
   "menu.remove": "サービスを削除…",
   "menu.file": "ファイル",
+  "menu.edit": "編集",
   "menu.openChatPlus": "ChatPlus を開く",
   "menu.reload": "ChatPlus を再読み込み",
   "menu.quit": "終了",

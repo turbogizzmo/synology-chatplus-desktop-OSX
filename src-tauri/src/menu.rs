@@ -493,8 +493,8 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     )?)?;
     // WKWebView receives Cut/Copy/Paste/Select All/Undo only through these responder-chain menu items.
     #[cfg(target_os = "macos")]
-    menu.insert(
-        &Submenu::with_items(
+    {
+        let edit = Submenu::with_items(
             app,
             "Edit",
             true,
@@ -507,9 +507,15 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 &PredefinedMenuItem::paste(app, None)?,
                 &PredefinedMenuItem::select_all(app, None)?,
             ],
-        )?,
-        2,
-    )?;
+        )?;
+        menu.insert(&edit, 2)?;
+        // macOS localizes the items; refresh() localizes the title like its siblings.
+        app.state::<MenuState>()
+            .submenus
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(("Edit".into(), edit));
+    }
     #[cfg(debug_assertions)]
     {
         let developer = Submenu::with_items(

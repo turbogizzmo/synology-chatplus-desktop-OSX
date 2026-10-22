@@ -187,6 +187,7 @@
   "menu.serviceSettings": "Configuración del servicio…",
   "menu.remove": "Eliminar servicio…",
   "menu.file": "Archivo",
+  "menu.edit": "Edición",
   "menu.openChatPlus": "Abrir ChatPlus",
   "menu.reload": "Recargar ChatPlus",
   "menu.quit": "Salir",
