@@ -10,11 +10,19 @@ const RAIL_WIDTH: f64 = 56.;
 // Swiph3l: Native provider WebViews cover the shell, so this must match the 30px CSS footer height.
 const FOOTER_HEIGHT: f64 = 30.;
 
-fn service_size(width: f64, height: f64) -> tauri::LogicalSize<f64> {
-    tauri::LogicalSize::new(
-        (width - RAIL_WIDTH).max(1.),
-        (height - FOOTER_HEIGHT).max(1.),
-    )
+/// The service rail only switches services; with a single enabled service it is
+/// noise beside the provider's own navigation, so that service covers it.
+/// Settings stays on Cmd+, and the rail returns when a second service is enabled.
+fn rail_width(settings: &state::Settings) -> f64 {
+    if settings.services.iter().filter(|s| s.enabled).count() > 1 {
+        RAIL_WIDTH
+    } else {
+        0.
+    }
+}
+
+fn service_size(width: f64, height: f64, rail: f64) -> tauri::LogicalSize<f64> {
+    tauri::LogicalSize::new((width - rail).max(1.), (height - FOOTER_HEIGHT).max(1.))
 }
 
 pub struct ServiceSession {
@@ -65,10 +73,12 @@ pub fn layout(app: &AppHandle) {
     if let Some(rail) = app.get_webview("main") {
         let _ = rail.set_size(tauri::LogicalSize::new(width, height));
     }
-    for service in state::current(app).services {
+    let settings = state::current(app);
+    let rail = rail_width(&settings);
+    for service in settings.services {
         if let Some(view) = app.get_webview(&label(&service.id)) {
-            let _ = view.set_position(tauri::LogicalPosition::new(RAIL_WIDTH, 0.));
-            let _ = view.set_size(service_size(width, height));
+            let _ = view.set_position(tauri::LogicalPosition::new(rail, 0.));
+            let _ = view.set_size(service_size(width, height, rail));
         }
     }
 }
@@ -312,11 +322,28 @@ mod removal_tests {
     #[test]
     fn native_service_geometry_reserves_footer_and_stays_positive_at_any_scale() {
         for scale in [1., 1.25, 1.5, 2.] {
-            let size = service_size(1366. / scale, 768. / scale);
-            assert_eq!(size.width, 1366. / scale - RAIL_WIDTH);
-            assert_eq!(size.height, 768. / scale - FOOTER_HEIGHT);
+            for rail in [RAIL_WIDTH, 0.] {
+                let size = service_size(1366. / scale, 768. / scale, rail);
+                assert_eq!(size.width, 1366. / scale - rail);
+                assert_eq!(size.height, 768. / scale - FOOTER_HEIGHT);
+            }
         }
-        assert_eq!(service_size(10., 10.), tauri::LogicalSize::new(1., 1.));
+        assert_eq!(
+            service_size(10., 10., RAIL_WIDTH),
+            tauri::LogicalSize::new(1., 1.)
+        );
+    }
+    #[test]
+    fn the_rail_appears_only_when_there_is_a_service_to_switch_to() {
+        let mut settings = settings();
+        assert!(settings.services.iter().filter(|s| s.enabled).count() > 1);
+        assert_eq!(rail_width(&settings), RAIL_WIDTH);
+        for service in settings.services.iter_mut().skip(1) {
+            service.enabled = false;
+        }
+        assert_eq!(rail_width(&settings), 0.);
+        settings.services.truncate(1);
+        assert_eq!(rail_width(&settings), 0.);
     }
     #[test]
     fn removal_reselects_active_preserves_other_profile_and_survives_restart() {
@@ -547,14 +574,17 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             }
             tauri::webview::NewWindowResponse::Deny
         })
-        .on_page_load(move |_, payload| {
-            if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+        .on_page_load(move |_, payload| match payload.event() {
+            tauri::webview::PageLoadEvent::Started => {
                 crate::unread::invalidate_presentation(&load_app, &load_id);
                 crate::connection::set_for(
                     &load_app,
                     &load_id,
                     crate::connection::Connection::Connecting,
                 );
+            }
+            tauri::webview::PageLoadEvent::Finished => {
+                crate::platform::page_finished(&load_app, &load_id);
             }
         });
     // Swiph3l: The migrated primary service retains its original profile so existing logins survive migration.
@@ -565,12 +595,25 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
     ) {
         builder = builder.data_directory(profile);
     }
+    // WKWebView throttles timers in hidden windows and can unload the page after
+    // minutes in the tray, which would stop message and notification delivery.
+    // Honored on macOS 14+; earlier versions keep WebKit's default.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .background_throttling(tauri::utils::config::BackgroundThrottlingPolicy::Disabled);
+    }
     if service.provider.definition().theme {
         builder = builder.initialization_script(format!(
             "window.__chatplusTheme = {};\n{}",
             serde_json::to_string(&settings.theme).unwrap(),
             include_str!("../theme-bootstrap.js")
         ));
+    }
+    // WKWebView has no web Notification API; the shim forwards to the native bridge.
+    #[cfg(target_os = "macos")]
+    if service.supports_notifications() {
+        builder = builder.initialization_script(include_str!("../webkit-notifications.js"));
     }
     if service.supports_unread() {
         // Swiph3l: Unread adapters are provider-specific and independent of theme support; Discord and Synology Chat must never receive ChatPlus styling.
@@ -587,8 +630,12 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
     let view = window
         .add_child(
             builder,
-            tauri::LogicalPosition::new(RAIL_WIDTH, 0.),
-            service_size(size.width as f64 / scale, size.height as f64 / scale),
+            tauri::LogicalPosition::new(rail_width(&settings), 0.),
+            service_size(
+                size.width as f64 / scale,
+                size.height as f64 / scale,
+                rail_width(&settings),
+            ),
         )
         .map_err(|_| "Could not create service WebView. Check WebView2 installation.")?;
     crate::native_shortcuts::attach(app, &view)
