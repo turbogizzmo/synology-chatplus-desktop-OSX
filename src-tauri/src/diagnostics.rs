@@ -24,7 +24,10 @@ pub enum NotificationEvent {
     UnreadCleared,
     ToastSubmitted,
     ToastSuppressed,
+    // Toast click activation exists only for WinRT toasts.
+    #[cfg_attr(not(windows), allow(dead_code))]
     ToastActivated,
+    #[cfg_attr(not(windows), allow(dead_code))]
     ProviderActivated,
 }
 
@@ -44,11 +47,15 @@ pub enum NotificationReason {
     DuplicateEvent,
     SubmitFailed,
     NativeSubmission,
+    #[cfg_attr(not(windows), allow(dead_code))]
     ExistingWindow,
     UnchangedState,
     ProviderSilent,
+    #[cfg_attr(not(windows), allow(dead_code))]
     ProviderActivation,
+    #[cfg_attr(not(windows), allow(dead_code))]
     ActivationUnavailable,
+    #[cfg_attr(not(windows), allow(dead_code))]
     ActivationFailed,
 }
 

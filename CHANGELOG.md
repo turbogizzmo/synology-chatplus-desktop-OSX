@@ -2,6 +2,19 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## 0.6.1 - macOS polish
+
+### Added
+
+- Settings › Notifications offers **Open macOS notification settings** when
+  macOS blocks notifications, opening System Settings at this app's entry.
+
+### Fixed
+
+- The notification permission status updates when you return from System
+  Settings, instead of only after restarting the app.
+- Test-notification and notification-settings messages use macOS wording.
+
 ## 0.6.0 - first macOS release
 
 ### Added

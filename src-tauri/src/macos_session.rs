@@ -248,7 +248,7 @@ mod tests {
 
     fn session_cookie(http_only: bool) -> Retained<NSHTTPCookie> {
         let properties = NSMutableDictionary::<NSString, AnyObject>::new();
-        let mut set = |key: &str, value: &str| {
+        let set = |key: &str, value: &str| {
             let value = NSString::from_str(value);
             properties.insert(
                 &*NSString::from_str(key),

@@ -169,6 +169,30 @@ pub fn init(app: &tauri::AppHandle, request: bool) {
     }
 }
 
+/// Re-reads authorization from macOS, which the user may have changed in System
+/// Settings since startup. Waits briefly; on timeout the cached value stands.
+pub async fn refresh_authorization() {
+    if !bundled() {
+        return;
+    }
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    {
+        let tx = std::sync::Mutex::new(Some(tx));
+        let block = RcBlock::new(move |settings: NonNull<UNNotificationSettings>| {
+            store(authorization_from(
+                unsafe { settings.as_ref() }.authorizationStatus(),
+            ));
+            if let Some(tx) = tx.lock().unwrap_or_else(|e| e.into_inner()).take() {
+                let _ = tx.send(());
+            }
+        });
+        UNUserNotificationCenter::currentNotificationCenter()
+            .getNotificationSettingsWithCompletionHandler(&block);
+        // The block is not Send; it must be gone before the await.
+    }
+    let _ = tokio::time::timeout(std::time::Duration::from_secs(1), rx).await;
+}
+
 /// Shows the system prompt the first time; later calls just report the stored choice.
 pub fn request_authorization() {
     if !bundled() {
