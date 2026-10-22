@@ -58,3 +58,17 @@ pub fn observe_connection(
 pub fn observe_connection(_: &tauri::AppHandle, _: &tauri::Webview, _: &str) -> tauri::Result<()> {
     Ok(())
 }
+
+/// Windows learns completion from NavigationCompleted above.
+#[cfg(windows)]
+pub fn page_finished(_: &tauri::AppHandle, _: &str) {}
+
+/// WKWebView (via wry) reports Finished only from didFinishNavigation; failed
+/// provisional loads emit nothing, so Finished means the server document loaded.
+/// Re-project unread here, as NavigationCompleted does, or the presentation
+/// invalidated on Started stays stale until the provider's next observation.
+#[cfg(not(windows))]
+pub fn page_finished(app: &tauri::AppHandle, service_id: &str) {
+    crate::unread::sync_presentation(app);
+    crate::connection::set_for(app, service_id, crate::connection::Connection::Connected);
+}

@@ -50,28 +50,13 @@ pub fn permission(app: &AppHandle) -> Permission {
         .bridges
         .get(settings.active_service.as_deref().unwrap_or_default())
         .is_some_and(|(_, available)| *available);
-    let (state, native_granted, message) = match native {
-        NativeState::Enabled => (
-            "enabled",
-            true,
-            crate::i18n::t(app, "notification.permissionEnabled"),
-        ),
-        NativeState::NotRegistered => (
-            "not-registered",
-            false,
-            crate::i18n::t(app, "notification.permissionNotRegistered"),
-        ),
-        NativeState::Blocked => (
-            "blocked",
-            false,
-            crate::i18n::t(app, "notification.permissionBlocked"),
-        ),
-        NativeState::Unavailable => (
-            "unavailable",
-            true,
-            crate::i18n::t(app, "notification.permissionUnavailable"),
-        ),
+    let (state, native_granted) = match native {
+        NativeState::Enabled => ("enabled", true),
+        NativeState::NotRegistered => ("not-registered", false),
+        NativeState::Blocked => ("blocked", false),
+        NativeState::Unavailable => ("unavailable", true),
     };
+    let message = crate::i18n::t(app, permission_message(&native));
     #[cfg(windows)]
     let granted = native_granted;
     #[cfg(not(windows))]
@@ -92,7 +77,31 @@ pub fn permission(app: &AppHandle) -> Permission {
         message,
     }
 }
+fn permission_message(state: &NativeState) -> &'static str {
+    // On macOS NotRegistered means the user has not answered the system prompt yet.
+    if cfg!(target_os = "macos") {
+        match state {
+            NativeState::Enabled => "notification.macPermissionEnabled",
+            NativeState::NotRegistered => "notification.macPermissionNotDetermined",
+            NativeState::Blocked => "notification.macPermissionBlocked",
+            NativeState::Unavailable => "notification.macPermissionUnavailable",
+        }
+    } else {
+        match state {
+            NativeState::Enabled => "notification.permissionEnabled",
+            NativeState::NotRegistered => "notification.permissionNotRegistered",
+            NativeState::Blocked => "notification.permissionBlocked",
+            NativeState::Unavailable => "notification.permissionUnavailable",
+        }
+    }
+}
 pub fn request_permission(app: &AppHandle) -> Result<Permission, String> {
+    // The prompt answer arrives asynchronously; Settings re-reads permission afterwards.
+    #[cfg(target_os = "macos")]
+    if crate::macos_notifications::available() {
+        crate::macos_notifications::request_authorization();
+        return Ok(permission(app));
+    }
     #[cfg(not(windows))]
     if !matches!(
         app.notification().permission_state(),
@@ -168,7 +177,19 @@ fn native_state(app: &AppHandle) -> NativeState {
             _ => NativeState::Unavailable,
         };
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        use crate::macos_notifications::{authorization, Authorization};
+        let _ = app;
+        match authorization() {
+            Authorization::Authorized => NativeState::Enabled,
+            Authorization::NotDetermined => NativeState::NotRegistered,
+            Authorization::Denied => NativeState::Blocked,
+            // Unsigned builds and unbundled runs still deliver, through the AppleScript fallback.
+            Authorization::NotAllowed | Authorization::Unavailable => NativeState::Unavailable,
+        }
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = app;
         NativeState::Enabled
@@ -430,13 +451,29 @@ fn show(
     _event_identity: Option<String>,
     _arrival_generation: u64,
 ) -> Result<(), String> {
+    // The plugin's macOS backend is the deprecated NSUserNotificationCenter path.
+    #[cfg(target_os = "macos")]
+    return crate::macos_notifications::show(
+        app,
+        &presentation.title,
+        &presentation.body,
+        sound,
+        _service_id.as_deref(),
+    )
+    .map_err(|_| crate::i18n::t(app, "notification.showFailed"));
+    #[allow(unreachable_code)]
     let mut builder = app
         .notification()
         .builder()
         .title(&presentation.title)
         .body(&presentation.body);
     if sound {
-        builder = builder.sound("message-new-instant");
+        // macOS plays named system sounds; the freedesktop theme name is silent there.
+        builder = builder.sound(if cfg!(target_os = "macos") {
+            "default"
+        } else {
+            "message-new-instant"
+        });
     }
     builder
         .show()

@@ -547,14 +547,17 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             }
             tauri::webview::NewWindowResponse::Deny
         })
-        .on_page_load(move |_, payload| {
-            if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+        .on_page_load(move |_, payload| match payload.event() {
+            tauri::webview::PageLoadEvent::Started => {
                 crate::unread::invalidate_presentation(&load_app, &load_id);
                 crate::connection::set_for(
                     &load_app,
                     &load_id,
                     crate::connection::Connection::Connecting,
                 );
+            }
+            tauri::webview::PageLoadEvent::Finished => {
+                crate::platform::page_finished(&load_app, &load_id);
             }
         });
     // Swiph3l: The migrated primary service retains its original profile so existing logins survive migration.
@@ -565,12 +568,25 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
     ) {
         builder = builder.data_directory(profile);
     }
+    // WKWebView throttles timers in hidden windows and can unload the page after
+    // minutes in the tray, which would stop message and notification delivery.
+    // Honored on macOS 14+; earlier versions keep WebKit's default.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .background_throttling(tauri::utils::config::BackgroundThrottlingPolicy::Disabled);
+    }
     if service.provider.definition().theme {
         builder = builder.initialization_script(format!(
             "window.__chatplusTheme = {};\n{}",
             serde_json::to_string(&settings.theme).unwrap(),
             include_str!("../theme-bootstrap.js")
         ));
+    }
+    // WKWebView has no web Notification API; the shim forwards to the native bridge.
+    #[cfg(target_os = "macos")]
+    if service.supports_notifications() {
+        builder = builder.initialization_script(include_str!("../webkit-notifications.js"));
     }
     if service.supports_unread() {
         // Swiph3l: Unread adapters are provider-specific and independent of theme support; Discord and Synology Chat must never receive ChatPlus styling.

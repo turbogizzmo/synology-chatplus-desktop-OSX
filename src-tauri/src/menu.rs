@@ -491,6 +491,25 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
             &PredefinedMenuItem::show_all(app, None)?,
         ],
     )?)?;
+    // WKWebView receives Cut/Copy/Paste/Select All/Undo only through these responder-chain menu items.
+    #[cfg(target_os = "macos")]
+    menu.insert(
+        &Submenu::with_items(
+            app,
+            "Edit",
+            true,
+            &[
+                &PredefinedMenuItem::undo(app, None)?,
+                &PredefinedMenuItem::redo(app, None)?,
+                &PredefinedMenuItem::separator(app)?,
+                &PredefinedMenuItem::cut(app, None)?,
+                &PredefinedMenuItem::copy(app, None)?,
+                &PredefinedMenuItem::paste(app, None)?,
+                &PredefinedMenuItem::select_all(app, None)?,
+            ],
+        )?,
+        2,
+    )?;
     #[cfg(debug_assertions)]
     {
         let developer = Submenu::with_items(

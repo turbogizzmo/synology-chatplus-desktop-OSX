@@ -26,3 +26,11 @@ await build({
   target: "es2022",
   outfile: "src-tauri/unread-bootstrap.js",
 });
+// macOS-only injection: WKWebView lacks the web Notification API that WebView2 bridges natively.
+await build({
+  entryPoints: ["src/theme/webkit-notifications.ts"],
+  bundle: true,
+  format: "iife",
+  target: "es2022",
+  outfile: "src-tauri/webkit-notifications.js",
+});
