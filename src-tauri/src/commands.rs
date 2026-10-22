@@ -94,6 +94,7 @@ pub async fn save_settings(
     settings: Settings,
 ) -> Result<(), String> {
     local(&window, &["settings"])?;
+    crate::quickconnect::prepare(&app, &settings.services).await?;
     crate::services::save(&app, settings)?;
     window::apply_theme(&app)
         .map_err(|error| format!("Settings saved. Restart to apply the theme. {error}"))?;

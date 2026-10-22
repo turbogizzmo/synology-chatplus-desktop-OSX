@@ -4,7 +4,7 @@ import {
   type ProviderId,
   type ServiceConfig,
 } from "../app/providers";
-import { normalizeServer } from "../app/navigation";
+import { normalizeServer, quickConnectUrl } from "../app/navigation";
 import {
   applyNotificationColor,
   normalizeNotificationColor,
@@ -41,8 +41,14 @@ function actionIcon(kind: "drag" | "up" | "down" | "edit" | "remove") {
   return icon;
 }
 
+const quickConnectProviders = new Set(["synology-chatplus", "synology-chat"]);
+
 function normalizedServiceUrl(service: ServiceConfig): string {
   const definition = providers[service.provider];
+  if (quickConnectProviders.has(service.provider)) {
+    const quickConnect = quickConnectUrl(service.url);
+    if (quickConnect) return quickConnect;
+  }
   let value: string;
   try {
     value = normalizeServer(
@@ -639,10 +645,15 @@ export function serviceEditor(
     });
     field("name", t("services.name"), nameInput);
     const url = document.createElement("input");
-    url.type = "url";
+    // Text, not type=url: a bare QuickConnect ID must reach our own validation.
+    url.type = "text";
+    url.inputMode = "url";
     url.autocomplete = "off";
     url.spellcheck = false;
     const urlField = field("url", t("settings.serverUrl"), url);
+    const quickConnectHelp = document.createElement("small");
+    quickConnectHelp.textContent = t("services.quickconnectHelp");
+    urlField.append(quickConnectHelp);
     url.addEventListener("input", () => {
       draft.url = url.value;
       url.setCustomValidity("");
@@ -860,7 +871,10 @@ export function serviceEditor(
           : "settings.serverUrl",
       );
       url.value = draft.url;
-      url.placeholder = definition.defaultUrl || "https://example.com/chat/";
+      url.placeholder = quickConnectProviders.has(draft.provider)
+        ? "mynas or https://nas.example.com:5001/"
+        : definition.defaultUrl || "https://example.com/chat/";
+      quickConnectHelp.hidden = !quickConnectProviders.has(draft.provider);
       url.setCustomValidity("");
       updateNotifications();
       experimentalHelp.hidden = !definition.experimental;

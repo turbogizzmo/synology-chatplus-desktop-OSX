@@ -81,6 +81,21 @@ impl ProviderId {
         }
         Ok(normalized)
     }
+    /// DSM opens standalone package apps at its root with `?launchApp=<id>`, so
+    /// a bare NAS address needs no Login Portal alias. The IDs come from each
+    /// package's `/webman/3rdparty/<pkg>/config` manifest (both are `standalone`
+    /// with `allowURLNoSynoToken`). An explicit alias path is kept unchanged.
+    pub fn dsm_launch(self, mut url: Url) -> Url {
+        let app = match self {
+            Self::SynologyChatplus => "SYNO.SDS.ChatPlus.Application",
+            Self::SynologyChat => "SYNO.SDS.Chat.Application",
+            _ => return url,
+        };
+        if url.path() == "/" && url.query().is_none() {
+            url.set_query(Some(&format!("launchApp={app}")));
+        }
+        url
+    }
     pub fn allows(self, configured: &str, target: &Url) -> bool {
         if self == Self::Slack {
             return slack_origin(target);
@@ -257,6 +272,29 @@ pub fn normalize_services(services: &mut [ServiceConfig]) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bare_nas_addresses_open_through_the_dsm_launcher() {
+        let launch = |provider: ProviderId, url: &str| {
+            provider.dsm_launch(Url::parse(url).unwrap()).to_string()
+        };
+        assert_eq!(
+            launch(ProviderId::SynologyChatplus, "https://nas.example:5001/"),
+            "https://nas.example:5001/?launchApp=SYNO.SDS.ChatPlus.Application"
+        );
+        assert_eq!(
+            launch(ProviderId::SynologyChat, "https://nas.example/"),
+            "https://nas.example/?launchApp=SYNO.SDS.Chat.Application"
+        );
+        // A configured Login Portal alias stays exactly as entered.
+        assert_eq!(
+            launch(ProviderId::SynologyChatplus, "https://nas.example/chat/"),
+            "https://nas.example/chat/"
+        );
+        assert_eq!(
+            launch(ProviderId::Mattermost, "https://mm.example/"),
+            "https://mm.example/"
+        );
+    }
     fn profile_service(id: &str) -> ServiceConfig {
         ServiceConfig {
             id: id.into(),

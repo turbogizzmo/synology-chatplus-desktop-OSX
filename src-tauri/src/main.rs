@@ -18,6 +18,7 @@ mod notification_presentation;
 mod platform;
 mod project;
 mod providers;
+mod quickconnect;
 mod services;
 mod shell;
 mod single_instance;
@@ -124,6 +125,8 @@ fn main() {
             app.manage(diagnostics::NotificationHistory::default());
             app.manage(services::Lifecycle::default());
             app.manage(desktop_notifications::Service::default());
+            app.manage(quickconnect::Cache::default());
+            quickconnect::load(app.handle());
             desktop_notifications::icons(app.handle());
             // Ask macOS at startup only when the user already enabled notifications.
             #[cfg(target_os = "macos")]
@@ -143,6 +146,9 @@ fn main() {
             if settings_requested {
                 shell::settings(app.handle())?;
             }
+            // Cached QuickConnect addresses load immediately; verify them off the startup path.
+            quickconnect::refresh_all(app.handle());
+            quickconnect::watch(app.handle());
             updates::start(app.handle());
             single_instance::ready(app.handle());
             Ok(())

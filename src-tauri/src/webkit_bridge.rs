@@ -167,7 +167,7 @@ impl Ivars {
         let (app, service) = (&self.app, &self.service);
         if !crate::services::configured(app, service)
             || !current_bridge(app, &service.id, self.bridge_id)
-            || !trusted_origin(&service.url, origin)
+            || !trusted_origin(&crate::quickconnect::effective(app, service), origin)
         {
             return;
         }

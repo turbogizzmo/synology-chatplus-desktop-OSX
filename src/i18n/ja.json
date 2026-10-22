@@ -347,6 +347,7 @@
   "services.notificationsUnsupported": "このサービス提供元はまだデスクトップ通知に対応していません。",
   "services.nameRequired": "表示名を入力してください。",
   "services.urlInvalid": "有効な HTTP または HTTPS の URL を入力してください。",
+  "services.quickconnectHelp": "NAS のアドレス（例: https://nas.example.com:5001）または Synology QuickConnect ID（例: mynas）だけを入力してください。DSM のエイリアスは不要です。ネットワーク変更後は Cmd+R を押してください。",
   "services.urlSlack": "slack.com または *.slack.com の HTTPS URL を、独自のポート番号なしで使ってください。",
   "services.limit": "設定できるサービスは最大 12 個です。",
   "services.draftRemovalHelp": "保存済みプロファイルは保持されます。「保存」を選ぶと削除が保存されます。",
