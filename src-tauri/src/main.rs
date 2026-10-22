@@ -148,6 +148,7 @@ fn main() {
             }
             // Cached QuickConnect addresses load immediately; verify them off the startup path.
             quickconnect::refresh_all(app.handle());
+            quickconnect::watch(app.handle());
             updates::start(app.handle());
             single_instance::ready(app.handle());
             Ok(())

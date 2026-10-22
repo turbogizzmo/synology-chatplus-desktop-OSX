@@ -568,7 +568,7 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
                 ..popup_service.clone()
             };
             if crate::downloads::attachment_popup(&trusted, &target) {
-                return match crate::downloads::popup(&popup_app, &popup_service, features) {
+                return match crate::downloads::popup(&popup_app, &trusted, features) {
                     Ok(window) => tauri::webview::NewWindowResponse::Create { window },
                     Err(_) => {
                         crate::shell::report(

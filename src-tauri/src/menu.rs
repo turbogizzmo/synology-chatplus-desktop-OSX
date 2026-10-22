@@ -577,7 +577,7 @@ pub fn dispatch(app: &AppHandle, action: Action) -> Result<(), String> {
             // changed networks finds its NAS again.
             let settings = state::current(app);
             if let Some(service) = settings.active() {
-                if crate::quickconnect::target(&service.url).is_some() {
+                if crate::quickconnect::uses_quickconnect(service) {
                     crate::quickconnect::refresh(app, service, true);
                     return Ok(());
                 }

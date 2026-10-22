@@ -24,6 +24,7 @@ const DEFAULT_PATH: &str = "/";
 const LOOKUP_TIMEOUT: Duration = Duration::from_secs(10);
 const PROBE_TIMEOUT: Duration = Duration::from_secs(4);
 const CACHE_FILE: &str = "quickconnect.json";
+const WATCH_INTERVAL: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Target {
@@ -70,6 +71,11 @@ pub fn target(configured: &str) -> Option<Target> {
     Some(Target { id, domain, path })
 }
 
+/// Whether this service is set up by QuickConnect ID (Synology providers only).
+pub fn uses_quickconnect(service: &ServiceConfig) -> bool {
+    applies(service).is_some()
+}
+
 /// QuickConnect serves Synology DSM; other providers keep their URL literally.
 fn applies(service: &ServiceConfig) -> Option<Target> {
     matches!(
@@ -84,6 +90,9 @@ fn applies(service: &ServiceConfig) -> Option<Target> {
 struct Resolved {
     configured: String,
     effective: String,
+    /// Lets the watcher re-verify the address with a single pingpong.
+    #[serde(default)]
+    server_id: String,
 }
 
 #[derive(Default)]
@@ -366,13 +375,19 @@ fn choose(verified: &[Url], previous: Option<&Url>) -> Option<Url> {
         .cloned()
 }
 
-pub async fn resolve(target: &Target, previous: Option<&str>) -> Result<String, Failure> {
+pub struct Resolution {
+    pub effective: String,
+    server_id: String,
+}
+
+pub async fn resolve(target: &Target, previous: Option<&str>) -> Result<Resolution, Failure> {
     let global = format!("global.{}", target.domain);
     let info = directory(&global, "get_server_info", target).await?;
     let server_id = text(&info, &["server", "serverID"])
         .unwrap_or_default()
         .to_string();
     let previous = previous.and_then(|p| Url::parse(p).ok());
+    let mut server_id = server_id;
     let mut verified = probe(candidates(&info, target), &server_id).await;
     if verified.is_empty() {
         // No direct path: ask the regional control host for a relay tunnel.
@@ -381,18 +396,23 @@ pub async fn resolve(target: &Target, previous: Option<&str>) -> Result<String, 
             .map(str::to_string)
             .unwrap_or(global);
         if let Ok(tunnel) = directory(&control, "request_tunnel", target).await {
-            let tunnel_id = text(&tunnel, &["server", "serverID"]).unwrap_or(&server_id);
+            if let Some(id) = text(&tunnel, &["server", "serverID"]) {
+                server_id = id.to_string();
+            }
             let relays = relay_hosts(&tunnel, target)
                 .into_iter()
                 .filter_map(|(h, p)| Url::parse(&format!("https://{h}:{p}/")).ok())
                 .collect();
-            verified = probe(relays, tunnel_id).await;
+            verified = probe(relays, &server_id).await;
         }
     }
     let base = choose(&verified, previous.as_ref()).ok_or(Failure::Unreachable)?;
     let mut effective = base;
     effective.set_path(&target.path);
-    Ok(effective.into())
+    Ok(Resolution {
+        effective: effective.into(),
+        server_id,
+    })
 }
 
 /// Resolves every new or changed QuickConnect service before Settings persists it,
@@ -405,7 +425,7 @@ pub async fn prepare(app: &AppHandle, services: &[ServiceConfig]) -> Result<(), 
         if cached(app, service).is_some() {
             continue;
         }
-        let effective = resolve(&target, None)
+        let resolution = resolve(&target, None)
             .await
             .map_err(|failure| failure.message(&target.id))?;
         store(
@@ -413,7 +433,8 @@ pub async fn prepare(app: &AppHandle, services: &[ServiceConfig]) -> Result<(), 
             &service.id,
             Resolved {
                 configured: service.url.clone(),
-                effective,
+                effective: resolution.effective,
+                server_id: resolution.server_id,
             },
         );
     }
@@ -432,18 +453,20 @@ pub fn refresh(app: &AppHandle, service: &ServiceConfig, reload: bool) {
         let previous = cached(&app, &service);
         let label = crate::services::label(&service.id);
         match resolve(&target, previous.as_deref()).await {
-            Ok(effective) => {
+            Ok(Resolution {
+                effective,
+                server_id,
+            }) => {
                 let changed = previous.as_deref() != Some(effective.as_str());
-                if changed {
-                    store(
-                        &app,
-                        &service.id,
-                        Resolved {
-                            configured: service.url.clone(),
-                            effective: effective.clone(),
-                        },
-                    );
-                }
+                store(
+                    &app,
+                    &service.id,
+                    Resolved {
+                        configured: service.url.clone(),
+                        effective: effective.clone(),
+                        server_id,
+                    },
+                );
                 if let Some(view) = app.get_webview(&label) {
                     if changed {
                         if let Ok(url) = effective.parse() {
@@ -470,6 +493,45 @@ pub fn refresh(app: &AppHandle, service: &ServiceConfig, reload: bool) {
                     if let Some(view) = app.get_webview(&label) {
                         let _ = view.reload();
                     }
+                }
+            }
+        }
+    });
+}
+
+/// Follows a laptop between networks without user action: every minute, one
+/// pingpong confirms each service's current address is still the same NAS; when
+/// it stops answering (home LAN gone, office network, VPN), resolve again.
+pub fn watch(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(WATCH_INTERVAL).await;
+            let services = crate::state::current(&app).services;
+            for service in services
+                .iter()
+                .filter(|s| s.enabled && uses_quickconnect(s))
+            {
+                let entry = app
+                    .state::<Cache>()
+                    .0
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(&service.id)
+                    .filter(|resolved| resolved.configured == service.url)
+                    .cloned();
+                let Some(entry) = entry else {
+                    continue;
+                };
+                let healthy = match Url::parse(&entry.effective) {
+                    Ok(mut base) if !entry.server_id.is_empty() => {
+                        base.set_path("/");
+                        !probe(vec![base], &entry.server_id).await.is_empty()
+                    }
+                    _ => false,
+                };
+                if !healthy {
+                    refresh(&app, service, false);
                 }
             }
         }
@@ -632,7 +694,10 @@ mod tests {
     async fn live_directory_reports_an_unknown_id() {
         let _ = rustls::crypto::ring::default_provider().install_default();
         let missing = t("zz-not-a-real-id-9137", "/chat/");
-        assert_eq!(resolve(&missing, None).await, Err(Failure::NotFound));
+        assert!(matches!(
+            resolve(&missing, None).await,
+            Err(Failure::NotFound)
+        ));
     }
 
     #[test]
@@ -646,8 +711,24 @@ mod tests {
             notifications: true,
             notification_color: Default::default(),
         };
-        assert!(applies(&service).is_some());
-        service.provider = ProviderId::Discord;
-        assert!(applies(&service).is_none());
+        assert!(uses_quickconnect(&service));
+        // A QuickConnect-shaped URL on another provider stays an ordinary URL,
+        // so Reload must take the normal path for it.
+        for provider in [
+            ProviderId::Discord,
+            ProviderId::Mattermost,
+            ProviderId::Slack,
+        ] {
+            service.provider = provider;
+            assert!(!uses_quickconnect(&service));
+        }
+    }
+
+    #[test]
+    fn caches_written_before_server_ids_still_load() {
+        let old = r#"{"s":{"configured":"https://quickconnect.to/mynas/","effective":"https://10-0-2-254.mynas.direct.quickconnect.to:5001/"}}"#;
+        let cache: HashMap<String, Resolved> = serde_json::from_str(old).unwrap();
+        // An empty ID makes the watcher re-resolve once, which backfills it.
+        assert_eq!(cache["s"].server_id, "");
     }
 }
