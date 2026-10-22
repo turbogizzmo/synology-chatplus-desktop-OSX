@@ -468,12 +468,7 @@ fn show(
         .title(&presentation.title)
         .body(&presentation.body);
     if sound {
-        // macOS plays named system sounds; the freedesktop theme name is silent there.
-        builder = builder.sound(if cfg!(target_os = "macos") {
-            "default"
-        } else {
-            "message-new-instant"
-        });
+        builder = builder.sound("message-new-instant");
     }
     builder
         .show()
