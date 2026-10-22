@@ -8,7 +8,9 @@
 set -euo pipefail
 
 version=$(node -p 'require("./package.json").version')
-bundle=src-tauri/target/universal-apple-darwin/release/bundle/macos
+# Honor CARGO_TARGET_DIR: building outside iCloud-synced folders avoids File Provider
+# tagging the .app with FinderInfo, which codesign rejects.
+bundle="${CARGO_TARGET_DIR:-src-tauri/target}/universal-apple-darwin/release/bundle/macos"
 app="$bundle/ChatPlus Desktop.app"
 out=release-artifacts
 
