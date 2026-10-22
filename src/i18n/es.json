@@ -347,7 +347,7 @@
   "services.notificationsUnsupported": "Este proveedor todavía no admite notificaciones de escritorio.",
   "services.nameRequired": "Introduce un nombre para mostrar.",
   "services.urlInvalid": "Introduce una URL HTTP o HTTPS válida.",
-  "services.quickconnectHelp": "O introduce tu ID de Synology QuickConnect (por ejemplo, mynas). La aplicación encuentra y verifica tu NAS automáticamente; pulsa Cmd+R tras cambiar de red.",
+  "services.quickconnectHelp": "Introduce la dirección de tu NAS (por ejemplo, https://nas.example.com:5001) o solo tu ID de Synology QuickConnect (por ejemplo, mynas). No se necesita ningún alias en DSM. Pulsa Cmd+R tras cambiar de red.",
   "services.urlSlack": "Usa una URL HTTPS de Slack en slack.com o *.slack.com, sin un puerto personalizado.",
   "services.limit": "Puedes configurar hasta 12 servicios.",
   "services.draftRemovalHelp": "Se conservará el perfil guardado. La eliminación se guardará al elegir Guardar.",

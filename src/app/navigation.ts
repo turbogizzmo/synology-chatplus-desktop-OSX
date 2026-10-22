@@ -3,14 +3,14 @@ const QUICKCONNECT_SUBDOMAIN =
   /^([a-z0-9][a-z0-9-]{0,62})\.(quickconnect\.(?:to|cn))$/i;
 
 // Synology QuickConnect input -> the canonical stored link
-// https://quickconnect.to/<id>/<path>/ (path defaults to /chat/). Accepts a bare
+// https://quickconnect.to/<id>/<path>/ (no path = DSM's launcher). Accepts a bare
 // ID, the shareable quickconnect.to/<id> link and <id>.quickconnect.to. The
 // native side resolves it to a verified NAS address; null means "not QuickConnect".
 export function quickConnectUrl(input: string): string | null {
   const value = input.trim();
   if (!value || /[\\\s?#@]/.test(value)) return null;
   if (QUICKCONNECT_ID.test(value))
-    return `https://quickconnect.to/${value.toLowerCase()}/chat/`;
+    return `https://quickconnect.to/${value.toLowerCase()}/`;
   let url: URL;
   try {
     url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
@@ -32,7 +32,7 @@ export function quickConnectUrl(input: string): string | null {
     domain = match[2].toLowerCase();
   }
   if (!id || !QUICKCONNECT_ID.test(id)) return null;
-  const path = segments.length ? `/${segments.join("/")}/` : "/chat/";
+  const path = segments.length ? `/${segments.join("/")}/` : "/";
   return `https://${domain}/${id.toLowerCase()}${path}`;
 }
 

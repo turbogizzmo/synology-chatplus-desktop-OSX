@@ -36,23 +36,23 @@ test("rejects credentials, tokens, non-web schemes and malformed input", () => {
 
 test("QuickConnect IDs and links become the canonical stored link", () => {
   for (const [input, expected] of [
-    ["MyNas", "https://quickconnect.to/mynas/chat/"],
-    [" mynas ", "https://quickconnect.to/mynas/chat/"],
-    ["quickconnect.to/mynas", "https://quickconnect.to/mynas/chat/"],
-    ["https://QuickConnect.to/mynas/", "https://quickconnect.to/mynas/chat/"],
-    ["http://quickconnect.to/mynas", "https://quickconnect.to/mynas/chat/"],
+    ["MyNas", "https://quickconnect.to/mynas/"],
+    [" mynas ", "https://quickconnect.to/mynas/"],
+    ["quickconnect.to/mynas", "https://quickconnect.to/mynas/"],
+    ["https://QuickConnect.to/mynas/", "https://quickconnect.to/mynas/"],
+    ["http://quickconnect.to/mynas", "https://quickconnect.to/mynas/"],
     [
       "https://quickconnect.to/mynas/chatplus",
       "https://quickconnect.to/mynas/chatplus/",
     ],
-    ["mynas.quickconnect.to", "https://quickconnect.to/mynas/chat/"],
-    ["https://mynas.quickconnect.cn/", "https://quickconnect.cn/mynas/chat/"],
+    ["mynas.quickconnect.to", "https://quickconnect.to/mynas/"],
+    ["https://mynas.quickconnect.cn/", "https://quickconnect.cn/mynas/"],
   ])
     assert.equal(quickConnectUrl(input), expected, input);
   // Canonical output round-trips through the ordinary URL normalizer unchanged.
   assert.equal(
     normalizeServer(quickConnectUrl("mynas")),
-    "https://quickconnect.to/mynas/chat/",
+    "https://quickconnect.to/mynas/",
   );
 });
 

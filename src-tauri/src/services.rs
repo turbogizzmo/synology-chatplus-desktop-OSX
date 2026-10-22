@@ -547,6 +547,7 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             .provider
             .validate_url(&crate::quickconnect::effective(app, service))?
             .parse()
+            .map(|url| service.provider.dsm_launch(url))
             .map_err(|_| "Invalid service URL.")?
     };
     let mut builder = WebviewBuilder::new(&session.webview_label, WebviewUrl::External(url))

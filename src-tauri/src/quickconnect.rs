@@ -19,7 +19,8 @@ use tauri::{AppHandle, Manager};
 use url::Url;
 
 const SERVICE_ID: &str = "dsm_portal_https";
-const DEFAULT_PATH: &str = "/chat/";
+// The DSM root: the service view adds `?launchApp=` (see ProviderId::dsm_launch).
+const DEFAULT_PATH: &str = "/";
 const LOOKUP_TIMEOUT: Duration = Duration::from_secs(10);
 const PROBE_TIMEOUT: Duration = Duration::from_secs(4);
 const CACHE_FILE: &str = "quickconnect.json";
@@ -446,7 +447,7 @@ pub fn refresh(app: &AppHandle, service: &ServiceConfig, reload: bool) {
                 if let Some(view) = app.get_webview(&label) {
                     if changed {
                         if let Ok(url) = effective.parse() {
-                            let _ = view.navigate(url);
+                            let _ = view.navigate(service.provider.dsm_launch(url));
                         }
                     } else if reload {
                         let _ = view.reload();
@@ -503,7 +504,7 @@ mod tests {
     fn canonical_links_parse_and_other_urls_do_not() {
         assert_eq!(
             target("https://quickconnect.to/MyNas/"),
-            Some(t("mynas", "/chat/"))
+            Some(t("mynas", "/"))
         );
         assert_eq!(
             target("https://quickconnect.to/mynas/chatplus/"),

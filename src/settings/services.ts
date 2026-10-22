@@ -871,7 +871,9 @@ export function serviceEditor(
           : "settings.serverUrl",
       );
       url.value = draft.url;
-      url.placeholder = definition.defaultUrl || "https://example.com/chat/";
+      url.placeholder = quickConnectProviders.has(draft.provider)
+        ? "mynas or https://nas.example.com:5001/"
+        : definition.defaultUrl || "https://example.com/chat/";
       quickConnectHelp.hidden = !quickConnectProviders.has(draft.provider);
       url.setCustomValidity("");
       updateNotifications();

@@ -347,7 +347,7 @@
   "services.notificationsUnsupported": "Desktop notifications are not supported by this provider yet.",
   "services.nameRequired": "Enter a display name.",
   "services.urlInvalid": "Enter a valid HTTP or HTTPS URL.",
-  "services.quickconnectHelp": "Or enter your Synology QuickConnect ID (for example mynas). The app finds and verifies your NAS automatically; press Cmd+R after changing networks.",
+  "services.quickconnectHelp": "Enter your NAS address (for example https://nas.example.com:5001) or just your Synology QuickConnect ID (for example mynas). No DSM alias is needed. Press Cmd+R after changing networks.",
   "services.urlSlack": "Use an HTTPS Slack URL on slack.com or *.slack.com, without a custom port.",
   "services.limit": "You can configure up to 12 services.",
   "services.draftRemovalHelp": "The stored profile will be retained. Removal is saved when you choose Save.",
