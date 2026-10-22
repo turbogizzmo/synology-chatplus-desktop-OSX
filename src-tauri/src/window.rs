@@ -135,6 +135,9 @@ pub fn open(app: &AppHandle) -> Result<(), String> {
     window.on_window_event(move |event| match event {
         WindowEvent::CloseRequested { api, .. } => {
             let _ = handle.save_window_state(StateFlags::all());
+            // Keep a "Stay signed in" session before the app may be quit from the tray.
+            #[cfg(target_os = "macos")]
+            crate::macos_session::keep_all(&handle);
             if state::current(&handle).close_to_tray {
                 if event_window.hide().is_ok() {
                     api.prevent_close();
