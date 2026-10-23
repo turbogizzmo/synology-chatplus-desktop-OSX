@@ -34,11 +34,11 @@ await build({
   target: "es2022",
   outfile: "src-tauri/webkit-notifications.js",
 });
-// macOS-only injection for every provider: keeps arrow/function-key characters out of text.
+// macOS-only injection for every provider: arrow keys move the caret instead of typing boxes.
 await build({
-  entryPoints: ["src/theme/function-keys.ts"],
+  entryPoints: ["src/theme/arrow-keys.ts"],
   bundle: true,
   format: "iife",
   target: "es2022",
-  outfile: "src-tauri/function-keys.js",
+  outfile: "src-tauri/arrow-keys.js",
 });
