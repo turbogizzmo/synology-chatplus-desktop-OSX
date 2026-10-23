@@ -52,3 +52,11 @@ jobs:
           gh release create "$GITHUB_REF_NAME" release-artifacts/* \
             --title "ChatPlus Desktop ${GITHUB_REF_NAME#v} for macOS" \
             --generate-notes --verify-tag "${prerelease[@]}"
+      # Run the installed app's own update check against what was just published,
+      # so a release macOS apps would reject fails here instead of on users' Macs.
+      - name: Verify the published release passes the macOS update check
+        if: ${{ !contains(github.ref_name, '-') }}
+        run: >-
+          cargo test --locked --manifest-path src-tauri/Cargo.toml
+          updates::tests::published_latest_release_passes_the_mac_update_check
+          -- --ignored --exact

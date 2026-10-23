@@ -433,5 +433,6 @@
   "updates.status.checkTimeout": "更新の確認がタイムアウトしました。接続を確認して、もう一度お試しください。",
   "updates.status.manifestMissing": "選択されたリリースに更新マニフェストがありません。ダウンロードもインストールも行われていません。",
   "updates.status.releaseIncomplete": "選択されたリリースに有効な Windows x64 インストーラーまたは署名がありません。何もインストールされていません。",
+  "updates.status.releaseIncompleteMac": "選択されたリリースに有効な macOS 更新パッケージまたは署名がありません。何もインストールされていません。",
   "updates.status.versionMismatch": "リリースタグ、マニフェストのバージョン、またはパッケージの識別情報が一致しません。何もインストールされていません。"
 }

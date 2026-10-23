@@ -553,41 +553,112 @@ fn validate_selected_update(
             "The update manifest version does not match the selected release tag.",
         ));
     }
-    let platforms = update.raw_json.get("platforms").ok_or_else(|| {
+    validate_package(
+        UpdateTarget::current(),
+        update.raw_json.get("platforms"),
+        &selected.release,
+        &selected.version,
+        config,
+        &update.download_url,
+        &update.signature,
+    )
+}
+
+/// The platform whose package an update must provide. The check used to require
+/// the Windows x64 installer on every platform, so Mac builds rejected every release.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum UpdateTarget {
+    WindowsX64,
+    MacArm,
+    MacIntel,
+}
+
+impl UpdateTarget {
+    fn current() -> Self {
+        if cfg!(target_os = "macos") {
+            if cfg!(target_arch = "aarch64") {
+                Self::MacArm
+            } else {
+                Self::MacIntel
+            }
+        } else {
+            Self::WindowsX64
+        }
+    }
+
+    /// Manifest keys in the order Tauri's updater reads them for this target.
+    fn platforms(self) -> &'static [&'static str] {
+        match self {
+            Self::WindowsX64 => &["windows-x86_64-nsis", "windows-x86_64"],
+            Self::MacArm => &["darwin-aarch64-app", "darwin-aarch64"],
+            Self::MacIntel => &["darwin-x86_64-app", "darwin-x86_64"],
+        }
+    }
+
+    fn package(self, version: &Version) -> String {
+        match self {
+            Self::WindowsX64 => format!("windows-x86_64--ChatPlus-Desktop_{version}_x64-setup.exe"),
+            // One universal archive serves both Mac architectures.
+            Self::MacArm | Self::MacIntel => "ChatPlus-Desktop-macOS.app.tar.gz".into(),
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::WindowsX64 => "Windows x64",
+            Self::MacArm | Self::MacIntel => "macOS",
+        }
+    }
+}
+
+/// Accepts the selected release only if this target's package, as named in the
+/// manifest, is a published asset of this repository's release with its own
+/// published signature, and is exactly what the updater is about to install.
+fn validate_package(
+    target: UpdateTarget,
+    platforms: Option<&serde_json::Value>,
+    release: &Release,
+    version: &Version,
+    config: &Configuration,
+    download_url: &url::Url,
+    update_signature: &str,
+) -> Result<(), CheckFailure> {
+    let label = target.label();
+    let invalid = || CheckFailure::new("metadata-invalid", "Update metadata failed validation.");
+    let unsigned = || {
         CheckFailure::new(
             "release-incomplete",
-            "The selected release has no Windows x64 update package.",
+            "The selected update package has no published signature asset.",
         )
-    })?;
-    let windows = platforms
-        .get("windows-x86_64-nsis")
-        .or_else(|| platforms.get("windows-x86_64"))
+    };
+    let entry = platforms
+        .and_then(|platforms| {
+            target
+                .platforms()
+                .iter()
+                .find_map(|key| platforms.get(*key))
+        })
         .ok_or_else(|| {
             CheckFailure::new(
                 "release-incomplete",
-                "The selected release has no Windows x64 update package.",
+                format!("The selected release has no {label} update package."),
             )
         })?;
-    let windows_url: url::Url = windows
+    let url: url::Url = entry
         .get("url")
         .and_then(|value| value.as_str())
         .and_then(|value| value.parse().ok())
-        .ok_or_else(|| {
-            CheckFailure::new("metadata-invalid", "Update metadata failed validation.")
-        })?;
-    let expected_file = format!(
-        "windows-x86_64--ChatPlus-Desktop_{}_x64-setup.exe",
-        selected.version
-    );
-    let windows_asset = published_asset(&selected.release, config, &windows_url)
+        .ok_or_else(invalid)?;
+    let expected_file = target.package(version);
+    let package = published_asset(release, config, &url)
         .filter(|asset| asset.name == expected_file)
         .ok_or_else(|| {
             CheckFailure::new(
                 "release-incomplete",
-                "The selected release has no trusted Windows x64 installer.",
+                format!("The selected release has no trusted {label} update package."),
             )
         })?;
-    let signature = windows
+    let signature = entry
         .get("signature")
         .and_then(|value| value.as_str())
         .filter(|value| !value.trim().is_empty())
@@ -597,37 +668,21 @@ fn validate_selected_update(
                 "The selected update package has no signature.",
             )
         })?;
-    if !selected.release.assets.iter().any(|asset| {
-        asset.name == format!("{}.sig", windows_asset.name)
-            && release_asset_matches(asset, config, &selected.release.tag_name)
-    }) {
-        return Err(CheckFailure::new(
-            "release-incomplete",
-            "The selected update package has no published signature asset.",
-        ));
-    }
-    let artifact =
-        published_asset(&selected.release, config, &update.download_url).ok_or_else(|| {
-            CheckFailure::new("metadata-invalid", "Update metadata failed validation.")
-        })?;
-    if update.signature.trim().is_empty()
-        || !selected.release.assets.iter().any(|asset| {
-            asset.name == format!("{}.sig", artifact.name)
-                && release_asset_matches(asset, config, &selected.release.tag_name)
+    let signed = |asset: &Asset| {
+        release.assets.iter().any(|candidate| {
+            candidate.name == format!("{}.sig", asset.name)
+                && release_asset_matches(candidate, config, &release.tag_name)
         })
-    {
-        return Err(CheckFailure::new(
-            "release-incomplete",
-            "The selected update package has no published signature asset.",
-        ));
+    };
+    if !signed(package) {
+        return Err(unsigned());
     }
-    if cfg!(all(windows, target_arch = "x86_64"))
-        && (artifact.name != expected_file || update.signature != signature)
-    {
-        return Err(CheckFailure::new(
-            "metadata-invalid",
-            "Update metadata failed validation.",
-        ));
+    let artifact = published_asset(release, config, download_url).ok_or_else(invalid)?;
+    if update_signature.trim().is_empty() || !signed(artifact) {
+        return Err(unsigned());
+    }
+    if artifact.name != expected_file || update_signature != signature {
+        return Err(invalid());
     }
     Ok(())
 }
@@ -1077,6 +1132,207 @@ mod tests {
             tag_name: tag.into(),
             draft: false,
             assets,
+        }
+    }
+
+    const REPO: &str =
+        "https://github.com/turbogizzmo/synology-chatplus-desktop-OSX/releases/download";
+
+    /// The shape of a real published macOS release (v0.6.1): DMG, updater archive,
+    /// its signature and the manifest naming both Mac architectures.
+    fn mac_release(tag: &str) -> (Release, serde_json::Value) {
+        let file = "ChatPlus-Desktop-macOS.app.tar.gz";
+        let url = format!("{REPO}/{tag}/{file}");
+        let release = release(
+            tag,
+            [
+                "ChatPlus-Desktop-macOS.dmg",
+                file,
+                &format!("{file}.sig"),
+                "latest.json",
+            ]
+            .iter()
+            .map(|name| asset(name, &format!("{REPO}/{tag}/{name}")))
+            .collect(),
+        );
+        let entry = serde_json::json!({"signature": "sig", "url": url});
+        let platforms = serde_json::json!({"darwin-aarch64": entry, "darwin-x86_64": entry});
+        (release, platforms)
+    }
+
+    fn check(
+        target: UpdateTarget,
+        release: &Release,
+        platforms: &serde_json::Value,
+        download: &str,
+        signature: &str,
+    ) -> Result<(), &'static str> {
+        let version = Version::parse(release.tag_name.trim_start_matches('v')).unwrap();
+        validate_package(
+            target,
+            Some(platforms),
+            release,
+            &version,
+            &configuration(),
+            &download.parse().unwrap(),
+            signature,
+        )
+        .map_err(|failure| failure.code)
+    }
+
+    #[test]
+    fn mac_builds_accept_the_published_mac_release() {
+        let (release, platforms) = mac_release("v0.6.1");
+        let download = format!("{REPO}/v0.6.1/ChatPlus-Desktop-macOS.app.tar.gz");
+        for target in [UpdateTarget::MacArm, UpdateTarget::MacIntel] {
+            assert_eq!(
+                check(target, &release, &platforms, &download, "sig"),
+                Ok(()),
+                "{target:?}"
+            );
+        }
+        // The regression: a Mac release must not be judged by the Windows rules.
+        assert_eq!(
+            check(
+                UpdateTarget::WindowsX64,
+                &release,
+                &platforms,
+                &download,
+                "sig"
+            ),
+            Err("release-incomplete")
+        );
+    }
+
+    #[test]
+    fn windows_builds_keep_requiring_their_signed_installer() {
+        let file = "windows-x86_64--ChatPlus-Desktop_0.6.1_x64-setup.exe";
+        let url = format!("{REPO}/v0.6.1/{file}");
+        let release = release(
+            "v0.6.1",
+            vec![
+                asset(file, &url),
+                asset(&format!("{file}.sig"), &format!("{url}.sig")),
+            ],
+        );
+        let platforms = serde_json::json!({"windows-x86_64": {"signature": "sig", "url": url}});
+        assert_eq!(
+            check(UpdateTarget::WindowsX64, &release, &platforms, &url, "sig"),
+            Ok(())
+        );
+        assert_eq!(
+            check(UpdateTarget::MacArm, &release, &platforms, &url, "sig"),
+            Err("release-incomplete")
+        );
+    }
+
+    #[test]
+    fn mac_packages_must_be_published_signed_and_exactly_what_installs() {
+        let tag = "v0.6.1";
+        let download = format!("{REPO}/{tag}/ChatPlus-Desktop-macOS.app.tar.gz");
+        let (mut release, platforms) = mac_release(tag);
+        let mac = UpdateTarget::MacArm;
+        // Manifest signature differs from the one the updater verifies.
+        assert_eq!(
+            check(mac, &release, &platforms, &download, "other"),
+            Err("metadata-invalid")
+        );
+        assert_eq!(
+            check(mac, &release, &platforms, &download, " "),
+            Err("release-incomplete")
+        );
+        // Installing a different published file than the manifest names.
+        let dmg = format!("{REPO}/{tag}/ChatPlus-Desktop-macOS.dmg");
+        assert_eq!(
+            check(mac, &release, &platforms, &dmg, "sig"),
+            Err("release-incomplete")
+        );
+        // A package hosted outside this repository's release.
+        let foreign = serde_json::json!({"darwin-aarch64": {
+            "signature": "sig",
+            "url": "https://example.com/ChatPlus-Desktop-macOS.app.tar.gz"
+        }});
+        assert_eq!(
+            check(mac, &release, &foreign, &download, "sig"),
+            Err("release-incomplete")
+        );
+        // No published signature asset.
+        release.assets.retain(|asset| !asset.name.ends_with(".sig"));
+        assert_eq!(
+            check(mac, &release, &platforms, &download, "sig"),
+            Err("release-incomplete")
+        );
+        // No Mac entry in the manifest at all.
+        let (release, _) = mac_release(tag);
+        assert_eq!(
+            check(mac, &release, &serde_json::json!({}), &download, "sig"),
+            Err("release-incomplete")
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "contacts GitHub; run after publishing a release"]
+    async fn published_latest_release_passes_the_mac_update_check() {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+        let config = configuration();
+        let client = reqwest::Client::builder()
+            .user_agent("ChatPlus-Desktop-ReleaseCheck")
+            .build()
+            .unwrap();
+        let latest: Release = client
+            .get(format!(
+                "https://api.github.com/repos/{}/{}/releases/latest",
+                config.owner, config.repository
+            ))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        let version = Version::parse(latest.tag_name.trim_start_matches('v')).unwrap();
+        let manifest_url = select_release_manifest(latest.clone(), &config)
+            .expect("the latest release publishes its update manifest");
+        let manifest: serde_json::Value = client
+            .get(manifest_url)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        let platforms = manifest.get("platforms");
+        for target in [UpdateTarget::MacArm, UpdateTarget::MacIntel] {
+            let entry = target
+                .platforms()
+                .iter()
+                .find_map(|key| platforms.and_then(|p| p.get(*key)))
+                .unwrap_or_else(|| panic!("{} has no {target:?} entry", latest.tag_name));
+            let download: url::Url = entry["url"].as_str().unwrap().parse().unwrap();
+            let signature = entry["signature"].as_str().unwrap();
+            let result = validate_package(
+                target, platforms, &latest, &version, &config, &download, signature,
+            );
+            assert!(
+                result.is_ok(),
+                "{} rejected for {target:?}",
+                latest.tag_name
+            );
+        }
+    }
+
+    #[test]
+    fn mac_targets_read_the_manifest_keys_tauri_uses() {
+        assert_eq!(
+            UpdateTarget::MacArm.platforms(),
+            ["darwin-aarch64-app", "darwin-aarch64"]
+        );
+        assert_eq!(
+            UpdateTarget::MacIntel.platforms(),
+            ["darwin-x86_64-app", "darwin-x86_64"]
+        );
+        if cfg!(target_os = "macos") {
+            assert_ne!(UpdateTarget::current(), UpdateTarget::WindowsX64);
         }
     }
 
