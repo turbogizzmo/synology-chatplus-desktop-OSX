@@ -433,6 +433,6 @@
   "updates.status.checkTimeout": "更新檢查逾時。請確認連線後再試一次。",
   "updates.status.manifestMissing": "所選版本缺少更新資訊清單。未下載或安裝任何內容。",
   "updates.status.releaseIncomplete": "所選版本缺少有效的 Windows x64 安裝程式或簽章。未安裝任何內容。",
-  "updates.status.releaseIncompleteMac": "所選版本缺少有効的 macOS 更新套件或簽章。未安裝任何內容。",
+  "updates.status.releaseIncompleteMac": "所選版本缺少有效的 macOS 更新套件或簽章。未安裝任何內容。",
   "updates.status.versionMismatch": "版本標籤、資訊清單版本或套件識別資訊不符。未安裝任何內容。"
 }
