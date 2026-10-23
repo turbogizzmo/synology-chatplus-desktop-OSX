@@ -2,6 +2,18 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## 0.6.2 - updates and arrow keys
+
+### Fixed
+
+- In-app updates on macOS: the update check required a Windows installer and
+  rejected every Mac release. **If you are on 0.6.0 or 0.6.1, download 0.6.2
+  once from the download page**; updates install automatically from then on.
+- Pressing an arrow key (or another function key) in a chat no longer types
+  box symbols into the message.
+- The release workflow now runs the app's own macOS update check against each
+  published release.
+
 ## 0.6.1 - macOS polish
 
 ### Added

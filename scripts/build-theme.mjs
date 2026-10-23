@@ -34,3 +34,11 @@ await build({
   target: "es2022",
   outfile: "src-tauri/webkit-notifications.js",
 });
+// macOS-only injection for every provider: keeps arrow/function-key characters out of text.
+await build({
+  entryPoints: ["src/theme/function-keys.ts"],
+  bundle: true,
+  format: "iife",
+  target: "es2022",
+  outfile: "src-tauri/function-keys.js",
+});
