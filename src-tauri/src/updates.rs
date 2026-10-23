@@ -1279,14 +1279,24 @@ mod tests {
             .user_agent("ChatPlus-Desktop-ReleaseCheck")
             .build()
             .unwrap();
-        let latest: Release = client
-            .get(format!(
-                "https://api.github.com/repos/{}/{}/releases/latest",
-                config.owner, config.repository
-            ))
+        let mut request = client.get(format!(
+            "https://api.github.com/repos/{}/{}/releases/latest",
+            config.owner, config.repository
+        ));
+        // Unauthenticated API calls share a 60/hour limit per IP, which hosted
+        // runners exhaust; the release workflow passes its job token. Only
+        // this test reads it; the app's own update check never sends a token.
+        if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+            if !token.is_empty() {
+                request = request.bearer_auth(token);
+            }
+        }
+        let latest: Release = request
             .send()
             .await
             .unwrap()
+            .error_for_status()
+            .expect("GitHub returned the latest release")
             .json()
             .await
             .unwrap();
