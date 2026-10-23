@@ -2,7 +2,7 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
-## Unreleased
+## 0.7.0 - GIFs in the emoji panel
 
 ### Added
 
