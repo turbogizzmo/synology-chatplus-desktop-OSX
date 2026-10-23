@@ -95,6 +95,8 @@ export const en = {
     "The selected release has no update manifest. Nothing was downloaded or installed.",
   "updates.status.releaseIncomplete":
     "The selected release is missing a valid Windows x64 setup or signature. Nothing was installed.",
+  "updates.status.releaseIncompleteMac":
+    "The selected release is missing a valid macOS update package or its signature. Nothing was installed.",
   "updates.status.versionMismatch":
     "The release tag, manifest version or package identity do not match. Nothing was installed.",
 };
@@ -196,6 +198,8 @@ export const pl: typeof en = {
     "Wybrane wydanie nie ma manifestu aktualizacji. Niczego nie pobrano ani nie zainstalowano.",
   "updates.status.releaseIncomplete":
     "W wybranym wydaniu brakuje prawidłowego instalatora Windows x64 lub podpisu. Niczego nie zainstalowano.",
+  "updates.status.releaseIncompleteMac":
+    "W wybranym wydaniu brakuje prawidłowego pakietu aktualizacji macOS lub jego podpisu. Niczego nie zainstalowano.",
   "updates.status.versionMismatch":
     "Tag wydania, wersja manifestu lub tożsamość pakietu nie są zgodne. Niczego nie zainstalowano.",
 };
@@ -296,6 +300,8 @@ export const es: typeof en = {
     "La versión seleccionada no tiene un manifiesto de actualización. No se descargó ni instaló nada.",
   "updates.status.releaseIncomplete":
     "La versión seleccionada no tiene un instalador válido de Windows x64 o una firma. No se instaló nada.",
+  "updates.status.releaseIncompleteMac":
+    "A la versión seleccionada le falta un paquete de actualización de macOS válido o su firma. No se instaló nada.",
   "updates.status.versionMismatch":
     "La etiqueta de la versión, el manifiesto o la identidad del paquete no coinciden. No se instaló nada.",
 };

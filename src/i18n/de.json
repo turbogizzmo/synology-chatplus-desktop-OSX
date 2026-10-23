@@ -433,5 +433,6 @@
   "updates.status.checkTimeout": "Zeitüberschreitung bei der Aktualisierungsprüfung. Verbindung prüfen und erneut versuchen.",
   "updates.status.manifestMissing": "Die gewählte Version enthält kein Aktualisierungsmanifest. Es wurde nichts heruntergeladen oder installiert.",
   "updates.status.releaseIncomplete": "Der gewählten Version fehlt ein gültiges Windows-x64-Installationsprogramm oder dessen Signatur. Es wurde nichts installiert.",
+  "updates.status.releaseIncompleteMac": "Der gewählten Version fehlt ein gültiges macOS-Aktualisierungspaket oder dessen Signatur. Es wurde nichts installiert.",
   "updates.status.versionMismatch": "Versions-Tag, Manifestversion oder Paketidentität stimmen nicht überein. Es wurde nichts installiert."
 }

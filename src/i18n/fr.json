@@ -433,5 +433,6 @@
   "updates.status.checkTimeout": "La recherche de mises à jour a expiré. Vérifiez votre connexion et réessayez.",
   "updates.status.manifestMissing": "La version sélectionnée n’a pas de manifeste de mise à jour. Rien n’a été téléchargé ni installé.",
   "updates.status.releaseIncomplete": "La version sélectionnée ne contient pas d’installateur Windows x64 valide ou de signature. Rien n’a été installé.",
+  "updates.status.releaseIncompleteMac": "La version sélectionnée ne contient pas de paquet de mise à jour macOS valide ou de signature. Rien n’a été installé.",
   "updates.status.versionMismatch": "L’étiquette de version, la version du manifeste ou l’identité du paquet ne correspondent pas. Rien n’a été installé."
 }

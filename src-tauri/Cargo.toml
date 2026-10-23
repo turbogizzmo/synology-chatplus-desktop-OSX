@@ -1,6 +1,6 @@
 [package]
 name = "chatplus-desktop"
-version = "0.6.1"
+version = "0.6.2"
 description = "Unofficial community macOS desktop client for Synology ChatPlus."
 authors = ["Swiph3l", "turbogizzmo"]
 license = "GPL-3.0-only"
