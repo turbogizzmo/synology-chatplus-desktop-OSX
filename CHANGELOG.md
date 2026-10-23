@@ -2,6 +2,16 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## 0.6.3 - arrow keys in the message box
+
+### Fixed
+
+- Arrow keys in the ChatPlus message box move the cursor again instead of
+  typing box symbols. WebKit was inserting each arrow's legacy control code
+  (Right Arrow is U+001D); the app now blocks it and performs the move,
+  including Shift, Option and Cmd variants. The 0.6.2 attempt targeted a
+  different character range and has been replaced.
+
 ## 0.6.2 - updates and arrow keys
 
 ### Fixed

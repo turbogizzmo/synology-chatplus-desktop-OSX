@@ -624,11 +624,11 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             include_str!("../theme-bootstrap.js")
         ));
     }
-    // Arrow and other function keys reach some editors as U+F700–U+F74F "text",
-    // shown as boxes; every provider gets the guard.
+    // WKWebView can type an arrow key's legacy control code into rich editors
+    // (boxes, caret stuck); the guard blocks it and moves the caret instead.
     #[cfg(target_os = "macos")]
     {
-        builder = builder.initialization_script(include_str!("../function-keys.js"));
+        builder = builder.initialization_script(include_str!("../arrow-keys.js"));
     }
     // WKWebView has no web Notification API; the shim forwards to the native bridge.
     #[cfg(target_os = "macos")]
