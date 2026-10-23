@@ -116,7 +116,11 @@ export function updateMessage(state: UpdateSnapshot): string {
     case "manifest-missing":
       return t("updates.status.manifestMissing");
     case "release-incomplete":
-      return t("updates.status.releaseIncomplete");
+      return t(
+        /Windows/i.test(navigator.userAgent)
+          ? "updates.status.releaseIncomplete"
+          : "updates.status.releaseIncompleteMac",
+      );
     case "version-mismatch":
       return t("updates.status.versionMismatch");
     case "metadata-invalid":

@@ -624,6 +624,12 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             include_str!("../theme-bootstrap.js")
         ));
     }
+    // Arrow and other function keys reach some editors as U+F700–U+F74F "text",
+    // shown as boxes; every provider gets the guard.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.initialization_script(include_str!("../function-keys.js"));
+    }
     // WKWebView has no web Notification API; the shim forwards to the native bridge.
     #[cfg(target_os = "macos")]
     if service.supports_notifications() {
