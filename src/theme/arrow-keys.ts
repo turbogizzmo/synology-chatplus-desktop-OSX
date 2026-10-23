@@ -47,7 +47,9 @@ interface GuardHost extends EventTarget {
 export function moveFor(
   code: number,
   modifiers: Modifiers,
-): [alter: "move" | "extend", Direction, Granularity] | null {
+):
+  | [alter: "move" | "extend", direction: Direction, granularity: Granularity]
+  | null {
   const step = MOVES.get(code);
   if (!step) return null;
   let [direction, granularity] = step;
