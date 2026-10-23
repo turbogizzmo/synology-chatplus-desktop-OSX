@@ -42,3 +42,16 @@ await build({
   target: "es2022",
   outfile: "src-tauri/arrow-keys.js",
 });
+// GIF tab: injected only for ChatPlus, which has no native GIF search.
+// The app-wide KLIPY key comes from the environment (a repository secret in the release
+// workflow) so it ships in the bundle without being committed; unset builds show a notice.
+await build({
+  entryPoints: ["src/theme/gif-picker.ts"],
+  bundle: true,
+  format: "iife",
+  target: "es2022",
+  outfile: "src-tauri/gif-picker.js",
+  define: {
+    KLIPY_API_KEY: JSON.stringify(process.env.KLIPY_API_KEY ?? ""),
+  },
+});

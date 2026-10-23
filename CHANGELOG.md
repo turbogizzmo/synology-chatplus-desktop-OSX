@@ -2,6 +2,14 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- A GIF tab in the ChatPlus emoji panel, next to Emoji and Sticker. Search
+  KLIPY's GIF library and click one to attach it to your message; it is uploaded
+  like a pasted image and only sent when you press send.
+
 ## 0.6.3 - arrow keys in the message box
 
 ### Fixed
