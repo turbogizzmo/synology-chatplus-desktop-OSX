@@ -643,6 +643,13 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
             include_str!("../unread-bootstrap.js")
         ));
     }
+    // Proof-of-concept GIF tab: ChatPlus has no native GIF search, so add a GIF
+    // tab to its emoji/sticker picker. The selectors come from the ChatPlus web
+    // client, so classic Synology Chat is not included. The KLIPY key is baked
+    // into the bundle at build time (scripts/build-theme.mjs).
+    if service.provider == crate::providers::ProviderId::SynologyChatplus {
+        builder = builder.initialization_script(include_str!("../gif-picker.js"));
+    }
     let scale = window.scale_factor().unwrap_or(1.0);
     let size = window
         .inner_size()

@@ -37,6 +37,18 @@ npm run tauri dev
 `tauri dev` builds the provider/theme bootstrap and starts Vite on loopback.
 Never commit test accounts, private server URLs, tokens or local profile contents.
 
+The ChatPlus GIF tab needs a KLIPY API key at **build** time. Release builds get
+it from the `KLIPY_API_KEY` repository secret. Locally, use your own free key from
+partner.klipy.com, or leave it unset and the tab shows a "no key" notice:
+
+```sh
+KLIPY_API_KEY="your_key" npm run tauri dev
+```
+
+Quit any installed ChatPlus Desktop first; the app allows one instance, so a dev
+build started next to it hands off to it and exits. See
+[GIF tab](GIF_PICKER_POC.md).
+
 ## Commands
 
 | Command                                                  | Purpose                                                                  |

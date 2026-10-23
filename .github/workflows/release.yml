@@ -39,6 +39,9 @@ jobs:
         run: npm run tauri build -- --target universal-apple-darwin --bundles app
         env:
           CHATPLUS_RELEASE_BUILD: "1"
+          # beforeBuildCommand rebuilds the injected bundles here; this bakes the
+          # app-wide GIF key into gif-picker.js without committing it.
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       - name: Package DMG, updater archive and manifest
