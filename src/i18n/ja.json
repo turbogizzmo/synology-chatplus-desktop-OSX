@@ -434,5 +434,17 @@
   "updates.status.manifestMissing": "選択されたリリースに更新マニフェストがありません。ダウンロードもインストールも行われていません。",
   "updates.status.releaseIncomplete": "選択されたリリースに有効な Windows x64 インストーラーまたは署名がありません。何もインストールされていません。",
   "updates.status.releaseIncompleteMac": "選択されたリリースに有効な macOS 更新パッケージまたは署名がありません。何もインストールされていません。",
-  "updates.status.versionMismatch": "リリースタグ、マニフェストのバージョン、またはパッケージの識別情報が一致しません。何もインストールされていません。"
+  "updates.status.versionMismatch": "リリースタグ、マニフェストのバージョン、またはパッケージの識別情報が一致しません。何もインストールされていません。",
+  "load.connecting": "{name} に接続しています…",
+  "load.failed": "{name} に接続できません",
+  "load.reason.offline": "このコンピュータはネットワークに接続されていません。接続を確認してから、もう一度お試しください。",
+  "load.reason.host": "アドレス {host} が見つかりませんでした。入力ミスがないか確認してください。",
+  "load.reason.refused": "{host} から応答がありません。アドレスとポート、サーバーが動作しているかを確認してください。",
+  "load.reason.timeout": "{host} の応答に時間がかかりすぎました。サーバーがスリープ中か、アドレスまたはポートが間違っている可能性があります。",
+  "load.reason.certificate": "{host} のセキュリティ証明書は信頼されていません。サーバーのドメイン名や QuickConnect など、有効な証明書を持つアドレスを使用してください。",
+  "load.reason.insecure": "{host} は http:// で開かれましたが、これは許可されていません。https:// のアドレスを使用してください。",
+  "load.reason.quickConnect": "QuickConnect ID を解決できませんでした。ID と、サーバーで QuickConnect が有効になっているかを確認してください。",
+  "load.reason.other": "{host} からページを読み込めませんでした。",
+  "load.retry": "再試行",
+  "load.edit": "接続を編集"
 }

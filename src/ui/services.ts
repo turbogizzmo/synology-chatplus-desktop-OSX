@@ -10,6 +10,19 @@ import { createFooter } from "./footer";
 import { acceptUnreadSnapshot, type UnreadSnapshot } from "../app/unread";
 import { applyNotificationColor } from "../app/notification-colors";
 import { bindRailReorder } from "./rail-reorder";
+type LoadReason =
+  | "offline"
+  | "host"
+  | "refused"
+  | "timeout"
+  | "certificate"
+  | "insecure"
+  | "quickConnect"
+  | "other";
+type LoadPhase =
+  | { phase: "loading" }
+  | { phase: "ready" }
+  | { phase: "failed"; reason: LoadReason };
 export async function renderServices() {
   document.body.classList.add("services-page");
   const app = document.getElementById("app")!;
@@ -26,6 +39,67 @@ export async function renderServices() {
   const footer = createFooter(version ?? "");
   footer.setIncludeBetaUpdates(settings.includeBetaUpdates);
   app.append(footer.element);
+  // A service's native view stays hidden until its page loads; this shell
+  // fills the space with a loading or failure screen meanwhile.
+  let loadPhases: Record<string, LoadPhase> = {};
+  const serviceStatus = (
+    service: Settings["services"][number],
+    phase: Exclude<LoadPhase, { phase: "ready" }>,
+  ) => {
+    let host = service.url;
+    try {
+      host = new URL(service.url).host || service.url;
+    } catch {}
+    const section = document.createElement("section");
+    section.className = `service-status service-status-${phase.phase}`;
+    section.setAttribute("aria-labelledby", "service-status-heading");
+    const heading = document.createElement("h1");
+    heading.id = "service-status-heading";
+    if (phase.phase === "loading") {
+      section.setAttribute("aria-busy", "true");
+      const spinner = document.createElement("span");
+      spinner.className = "service-status-spinner";
+      spinner.setAttribute("aria-hidden", "true");
+      heading.textContent = t("load.connecting", { name: service.name });
+      const detail = document.createElement("p");
+      detail.textContent = host;
+      section.append(spinner, heading, detail);
+      return section;
+    }
+    section.setAttribute("role", "alert");
+    heading.textContent = t("load.failed", { name: service.name });
+    const detail = document.createElement("p");
+    detail.textContent = t(
+      `load.reason.${phase.reason}` as "load.reason.other",
+      {
+        host,
+      },
+    );
+    const actions = document.createElement("div");
+    actions.className = "service-status-actions";
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.dataset.railKey = "status:retry";
+    retry.textContent = t("load.retry");
+    retry.addEventListener("click", () => {
+      void invoke("retry_service", { id: service.id }).catch(() => {
+        footer.report(t("rail.openError"));
+      });
+    });
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "secondary";
+    edit.dataset.railKey = "status:edit";
+    edit.textContent = t("load.edit");
+    edit.addEventListener("click", () => {
+      void invoke("edit_service", { id: service.id }).catch(() => {
+        footer.report(t("rail.settingsError"));
+      });
+    });
+    actions.append(retry, edit);
+    section.append(heading, detail, actions);
+    return section;
+  };
   let reorder: ReturnType<typeof bindRailReorder> | undefined;
   let reorderSaving = false;
   let deferredRender = false;
@@ -243,6 +317,28 @@ export async function renderServices() {
       empty.append(heading, add);
       app.append(empty);
     }
+    const active = settings.services.find(
+      (service) => service.enabled && service.id === settings.activeService,
+    );
+    const phase = active
+      ? (loadPhases[active.id] ?? { phase: "loading" })
+      : undefined;
+    const statusKey =
+      active && phase && phase.phase !== "ready"
+        ? JSON.stringify([active.id, active.name, active.url, phase])
+        : "";
+    const status = app.querySelector<HTMLElement>(".service-status");
+    // Unread refreshes re-render often; keep an unchanged screen (and its focus) in place.
+    if (status?.dataset.statusKey !== statusKey) {
+      status?.remove();
+      if (active && phase && phase.phase !== "ready") {
+        const next = serviceStatus(active, phase);
+        next.dataset.statusKey = statusKey;
+        app.append(next);
+        if (phase.phase === "failed" && document.hasFocus())
+          next.querySelector("button")?.focus({ preventScroll: true });
+      }
+    }
     services.scrollTop = scrollTop;
     if (focusKey) {
       const target = [
@@ -287,6 +383,15 @@ export async function renderServices() {
     connectionObserved = true;
     footer.setConnection(payload);
   });
+  let loadObserved = false;
+  await listen<Record<string, LoadPhase>>(
+    "service-load-changed",
+    ({ payload }) => {
+      loadObserved = true;
+      loadPhases = payload;
+      render();
+    },
+  );
   await listen("notification-issue", () => {
     footer.report(t("footer.status.notification"));
   });
@@ -294,13 +399,22 @@ export async function renderServices() {
   // Swiph3l: Subscribe before reading snapshots so startup checks and transport
   // events cannot disappear between mounting the footer and its first refresh.
   // A later event also takes precedence over an older in-flight snapshot reply.
-  const [update, connection, initialUnread, initialSettings] =
+  const [update, connection, initialUnread, initialSettings, initialLoad] =
     await Promise.allSettled([
       updates.getState(),
       invoke<string>("get_connection_state"),
       invoke<typeof unread>("get_unread_state"),
       getSettings(),
+      invoke<Record<string, LoadPhase>>("get_service_load_state"),
     ]);
+  if (
+    !loadObserved &&
+    initialLoad.status === "fulfilled" &&
+    initialLoad.value
+  ) {
+    loadPhases = initialLoad.value;
+    render();
+  }
   if (!updateObserved && update.status === "fulfilled" && update.value)
     footer.setUpdate(update.value);
   if (

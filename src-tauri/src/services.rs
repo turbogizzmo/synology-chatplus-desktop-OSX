@@ -96,26 +96,80 @@ pub fn show(app: &AppHandle) -> Result<(), String> {
     if app.get_webview(&session_label).is_none() {
         create(app, &service)?;
     }
-    for configured in &settings.services {
-        if let Some(view) = app.get_webview(&label(&configured.id)) {
-            if configured.id == service.id {
-                view.show()
-            } else {
-                view.hide()
-            }
-            .map_err(|_| "Could not switch service.")?;
-        }
-    }
+    present_views(app, &settings).map_err(|_| "Could not switch service.")?;
     layout(app);
     crate::unread::sync_presentation(app);
     let _ = app.emit_to("main", "services-changed", &settings);
     crate::unread::refresh(app);
     crate::connection::refresh(app);
     // Swiph3l: Switching services preserves provider unread; focus alone is never a read acknowledgement.
-    active(app)
-        .ok_or("Service unavailable.")?
-        .set_focus()
-        .map_err(|_| "Could not focus service.".into())
+    let view = active(app).ok_or("Service unavailable.")?;
+    if crate::load_state::visible(app, &service.id) {
+        view.set_focus().map_err(|_| "Could not focus service.")?;
+    }
+    Ok(())
+}
+
+/// Only the active service's view is shown, and only once its page has loaded;
+/// until then the shell's loading or failure screen sits where it would be.
+fn present_views(app: &AppHandle, settings: &state::Settings) -> tauri::Result<()> {
+    let active = settings.active().map(|service| service.id.as_str());
+    for configured in &settings.services {
+        if let Some(view) = app.get_webview(&label(&configured.id)) {
+            if Some(configured.id.as_str()) == active
+                && crate::load_state::visible(app, &configured.id)
+            {
+                view.show()?;
+            } else {
+                view.hide()?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Re-applies visibility after a load phase changes, focusing a page that just
+/// appeared only if the window already has focus.
+pub fn present(app: &AppHandle) {
+    let settings = state::current(app);
+    let _ = present_views(app, &settings);
+    let Some(service) = settings.active() else {
+        return;
+    };
+    let focused = app
+        .get_window("main")
+        .and_then(|window| window.is_focused().ok())
+        .unwrap_or(false);
+    if focused && crate::load_state::visible(app, &service.id) {
+        if let Some(view) = app.get_webview(&label(&service.id)) {
+            let _ = view.set_focus();
+        }
+    }
+}
+
+/// Loads a service again from its configured address after the first load failed.
+pub fn retry(app: &AppHandle, id: &str) -> Result<(), String> {
+    let settings = state::current(app);
+    let service = settings
+        .services
+        .iter()
+        .find(|service| service.id == id && service.enabled)
+        .ok_or("Choose an enabled configured service.")?;
+    let view = app.get_webview(&label(id)).ok_or("Service unavailable.")?;
+    if crate::quickconnect::pending(app, service) {
+        crate::load_state::waiting(app, id);
+        crate::quickconnect::refresh(app, service, true);
+        return Ok(());
+    }
+    let url = service
+        .provider
+        .validate_url(&crate::quickconnect::effective(app, service))?
+        .parse()
+        .map(|url| service.provider.dsm_launch(url))
+        .map_err(|_| "Invalid service URL.")?;
+    crate::load_state::begin(app, id);
+    view.navigate(url)
+        .map_err(|_| "Could not reload service.".into())
 }
 pub fn activate(app: &AppHandle, id: &str) -> Result<(), String> {
     let lifecycle = app.state::<Lifecycle>();
@@ -498,6 +552,7 @@ fn reconcile_current(app: &AppHandle, old: &state::Settings) -> Result<(), Strin
                     .map_err(|_| "Settings saved. Restart to apply service changes.")?;
             }
             crate::unread::remove(app, &service.id);
+            crate::load_state::remove(app, &service.id);
         }
     }
     reconcile_workspace(
@@ -540,9 +595,11 @@ fn create(app: &AppHandle, service: &ServiceConfig) -> Result<(), String> {
     // An unverified QuickConnect service loads nothing until it resolves; following
     // the directory link would redirect to a host the trust checks do not know.
     let url = if crate::quickconnect::pending(app, service) {
+        crate::load_state::waiting(app, &service.id);
         crate::quickconnect::refresh(app, service, false);
         "about:blank".parse().map_err(|_| "Invalid service URL.")?
     } else {
+        crate::load_state::begin(app, &service.id);
         service
             .provider
             .validate_url(&crate::quickconnect::effective(app, service))?

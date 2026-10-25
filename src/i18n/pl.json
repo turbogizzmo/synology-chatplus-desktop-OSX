@@ -358,5 +358,17 @@
   "settings.unsavedChanges": "Niezapisane zmiany",
   "settings.noChanges": "Wszystkie zmiany zapisane",
   "settings.externalConflict": "Zapisane ustawienia zmieniły się w innym oknie. Zachowano zmiany robocze. Zamknij i ponownie otwórz Ustawienia przed zapisem, aby uniknąć nadpisania.",
-  "settings.savedWarning": "Zmiany zapisano, ale aplikacja nie mogła ich w pełni zastosować. {message}"
+  "settings.savedWarning": "Zmiany zapisano, ale aplikacja nie mogła ich w pełni zastosować. {message}",
+  "load.connecting": "Łączenie z {name}…",
+  "load.failed": "Nie można połączyć się z {name}",
+  "load.reason.offline": "Ten komputer nie jest połączony z siecią. Sprawdź połączenie i spróbuj ponownie.",
+  "load.reason.host": "Nie znaleziono adresu {host}. Sprawdź, czy nie zawiera literówek.",
+  "load.reason.refused": "{host} nie odpowiada. Sprawdź adres i port oraz czy serwer działa.",
+  "load.reason.timeout": "{host} odpowiada zbyt długo. Serwer może być uśpiony albo adres lub port są nieprawidłowe.",
+  "load.reason.certificate": "Certyfikat bezpieczeństwa {host} nie jest zaufany. Użyj adresu z prawidłowym certyfikatem, np. nazwy domeny serwera lub QuickConnect.",
+  "load.reason.insecure": "{host} otwarto przez http://, co jest niedozwolone. Użyj adresu https://.",
+  "load.reason.quickConnect": "Nie udało się rozpoznać identyfikatora QuickConnect. Sprawdź identyfikator i czy QuickConnect jest włączony na serwerze.",
+  "load.reason.other": "Nie udało się wczytać strony z {host}.",
+  "load.retry": "Spróbuj ponownie",
+  "load.edit": "Edytuj połączenie"
 }

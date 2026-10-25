@@ -47,9 +47,9 @@ winreg = "0.55"
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6.2"
 objc2 = "0.6.4"
-objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSArray", "NSDate", "NSDictionary", "NSError", "NSHTTPCookie", "NSObject", "NSString"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSArray", "NSDate", "NSDictionary", "NSError", "NSHTTPCookie", "NSObject", "NSString", "NSURL"] }
 objc2-user-notifications = { version = "0.3.2", default-features = false, features = ["std", "bitflags", "block2", "UNNotification", "UNNotificationContent", "UNNotificationRequest", "UNNotificationResponse", "UNNotificationSettings", "UNNotificationSound", "UNNotificationTrigger", "UNUserNotificationCenter"] }
-objc2-web-kit = { version = "0.3.2", default-features = false, features = ["std", "objc2-app-kit", "block2", "WKFrameInfo", "WKHTTPCookieStore", "WKWebsiteDataStore", "WKNavigationAction", "WKNavigationDelegate", "WKScriptMessage", "WKScriptMessageHandler", "WKSecurityOrigin", "WKUserContentController", "WKWebView", "WKWebViewConfiguration"] }
+objc2-web-kit = { version = "0.3.2", default-features = false, features = ["std", "objc2-app-kit", "block2", "WKFrameInfo", "WKHTTPCookieStore", "WKWebsiteDataStore", "WKNavigation", "WKNavigationAction", "WKNavigationDelegate", "WKScriptMessage", "WKScriptMessageHandler", "WKSecurityOrigin", "WKUserContentController", "WKWebView", "WKWebViewConfiguration"] }
 
 [dev-dependencies]
 base64 = "0.23.1"
