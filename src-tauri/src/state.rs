@@ -177,6 +177,7 @@ pub struct Settings {
     pub notification_sound: bool,
     pub unread_title: bool,
     pub unread_tray: bool,
+    pub show_optional_services: bool,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -203,6 +204,8 @@ impl Default for Settings {
             notification_sound: true,
             unread_title: true,
             unread_tray: true,
+            // Synology services are always offered; Slack, Discord and Mattermost are opt-in.
+            show_optional_services: false,
         }
     }
 }
@@ -218,6 +221,7 @@ impl<'de> Deserialize<'de> for Settings {
         let mut value = serde_json::Value::deserialize(deserializer)?;
         migrate_update_preference(&mut value);
         migrate_onboarding_preference(&mut value);
+        migrate_optional_services_preference(&mut value);
         Self::deserialize(value).map_err(serde::de::Error::custom)
     }
 }
@@ -232,6 +236,30 @@ fn migrate_onboarding_preference(value: &mut serde_json::Value) -> bool {
     // Missing means a profile written before onboarding existed, including an
     // intentionally empty workspace. Only a new Settings::default is pending.
     settings.insert("onboardingCompleted".into(), true.into());
+    true
+}
+
+fn migrate_optional_services_preference(value: &mut serde_json::Value) -> bool {
+    let Some(settings) = value.as_object_mut() else {
+        return false;
+    };
+    if settings.contains_key("showOptionalServices") {
+        return false;
+    }
+    // Profiles that already use Slack, Discord or Mattermost keep seeing them in
+    // the Add list; everyone else starts with the Synology services only.
+    let uses_optional = settings
+        .get("services")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|services| {
+            services.iter().any(|service| {
+                matches!(
+                    service.get("provider").and_then(serde_json::Value::as_str),
+                    Some("slack" | "discord" | "mattermost")
+                )
+            })
+        });
+    settings.insert("showOptionalServices".into(), uses_optional.into());
     true
 }
 
@@ -581,6 +609,30 @@ mod tests {
         assert_eq!(reopened.active_service, saved.active_service);
         let mut round_trip = Some(migrated_settings_value(&reopened, stored).unwrap());
         assert!(!load_preferences(&mut round_trip, true).unwrap().1);
+    }
+
+    #[test]
+    fn optional_services_stay_offered_only_for_profiles_that_use_them() {
+        let synology: Settings = serde_json::from_value(serde_json::json!({
+            "services": [{"id": "a", "provider": "synology-chat", "name": "NAS",
+                "url": "https://nas.example/chat/", "enabled": true, "notifications": true}]
+        }))
+        .unwrap();
+        assert!(!synology.show_optional_services);
+        let discord: Settings = serde_json::from_value(serde_json::json!({
+            "services": [{"id": "b", "provider": "discord", "name": "Discord",
+                "url": "https://discord.com/app/", "enabled": true, "notifications": true}]
+        }))
+        .unwrap();
+        assert!(discord.show_optional_services);
+        let opted_out: Settings = serde_json::from_value(serde_json::json!({
+            "showOptionalServices": false,
+            "services": [{"id": "b", "provider": "discord", "name": "Discord",
+                "url": "https://discord.com/app/", "enabled": true, "notifications": true}]
+        }))
+        .unwrap();
+        assert!(!opted_out.show_optional_services);
+        assert!(!Settings::default().show_optional_services);
     }
 
     #[test]
