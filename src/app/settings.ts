@@ -22,6 +22,7 @@ export interface Settings {
   notificationSound: boolean;
   unreadTitle: boolean;
   unreadTray: boolean;
+  showOptionalServices: boolean;
 }
 export const getSettings = () => invoke<Settings>("get_settings");
 export const saveSettings = (settings: Settings) =>

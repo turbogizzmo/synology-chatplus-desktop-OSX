@@ -42,7 +42,11 @@ function service(id = "first", provider = "synology-chatplus") {
   };
 }
 
-function fixture(initial = [service()], fixtureServiceIds = []) {
+function fixture(
+  initial = [service()],
+  fixtureServiceIds = [],
+  { showOptional = true } = {},
+) {
   const { window, document } = parseHTML(
     '<html><body><div class="settings-content"><div id="editor"></div></div><button id="add-service">Add service</button></body></html>',
   );
@@ -79,6 +83,7 @@ function fixture(initial = [service()], fixtureServiceIds = []) {
     (change) => changes.push(change),
     (candidate) =>
       context.providerUi.serviceSupportsNotifications(candidate, fixtureIds),
+    { showOptionalServices: () => showOptional },
   );
   return {
     window,
@@ -240,6 +245,41 @@ test("provider choices control URL visibility and supported notifications withou
     assert.equal(JSON.stringify(f.services), before);
     f.cancel();
   }
+});
+
+test("Add offers only Synology providers until other services are opted in", () => {
+  const choices = (f) =>
+    [...f.document.querySelectorAll('input[name="service-provider"]')].map(
+      (radio) => radio.value,
+    );
+  const hidden = fixture([service()], [], { showOptional: false });
+  hidden.manager.add();
+  assert.deepEqual(choices(hidden), ["synology-chatplus", "synology-chat"]);
+  hidden.cancel();
+  const shown = fixture([service()], [], { showOptional: true });
+  shown.manager.add();
+  assert.deepEqual(choices(shown), [
+    "synology-chatplus",
+    "synology-chat",
+    "slack",
+    "discord",
+    "mattermost",
+  ]);
+});
+
+test("editing an existing optional service keeps its provider while others stay hidden", () => {
+  const f = fixture([service("first", "discord")], [], { showOptional: false });
+  f.manager.edit("first");
+  assert.deepEqual(
+    [...f.document.querySelectorAll('input[name="service-provider"]')].map(
+      (radio) => radio.value,
+    ),
+    ["synology-chatplus", "synology-chat", "discord"],
+  );
+  assert.equal(
+    f.document.getElementById("service-dialog-provider-discord").checked,
+    true,
+  );
 });
 
 test("Add allocates a fresh UUID on every opening, Cancel discards values, Apply appends", () => {

@@ -107,20 +107,21 @@ test("Spanish controls, interpolation, provider validation and error feedback ne
   setLanguage("en");
 });
 
-test("onboarding is translated in every locale and remains provider-neutral", () => {
+test("onboarding is translated in every locale and names only Synology", () => {
   const keys = [
     "onboarding.welcome",
-    "onboarding.chooseFirst",
+    "onboarding.connectHeading",
+    "onboarding.connectHelp",
+    "onboarding.setupChatPlus",
+    "onboarding.setupChatPlusHelp",
+    "onboarding.classicChat",
     "onboarding.addService",
     "onboarding.addAnother",
     "onboarding.continue",
     "onboarding.skip",
     "onboarding.empty",
-    "onboarding.supported",
-    "onboarding.serverService",
-    "onboarding.workspaceService",
-    "onboarding.fixedService",
     "onboarding.serviceHelp",
+    "services.showOptional",
   ];
   for (const language of Object.keys(resources)) {
     setLanguage(language);
@@ -130,7 +131,7 @@ test("onboarding is translated in every locale and remains provider-neutral", ()
       assert.notEqual(value, key, `${language}: ${key}`);
       if (language !== "en")
         assert.notEqual(value, resources.en[key], `${language}: ${key}`);
-      assert.doesNotMatch(value, /Synology|Discord|Slack|Mattermost/);
+      assert.doesNotMatch(value, /Discord|Slack|Mattermost/);
     }
   }
   setLanguage("en");

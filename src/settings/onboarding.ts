@@ -26,7 +26,8 @@ export function renderOnboarding(
     <header class="page-header"><img class="brand" src="/chatplus.png" alt="" width="32" height="32"><h1>${t("onboarding.welcome")}</h1></header>
     <div class="onboarding-content settings-content">
       <section id="onboarding-picker" aria-labelledby="onboarding-heading">
-        <h2 id="onboarding-heading" tabindex="-1">${t("onboarding.chooseFirst")}</h2>
+        <h2 id="onboarding-heading" tabindex="-1">${t("onboarding.connectHeading")}</h2>
+        <p class="onboarding-intro">${t("onboarding.connectHelp")}</p>
         <div class="onboarding-providers"></div>
       </section>
       <section id="onboarding-services" aria-labelledby="onboarding-services-heading" hidden>
@@ -116,7 +117,7 @@ export function renderOnboarding(
       services.splice(0, services.length, ...structuredClone(saved.services));
       dirty = false;
       picker.hidden = services.length > 0;
-      heading.textContent = t("onboarding.chooseFirst");
+      heading.textContent = t("onboarding.connectHeading");
     };
     try {
       // The shared editor owns URL validation, UUIDs and isolated service drafts.
@@ -139,50 +140,40 @@ export function renderOnboarding(
     }
     if (!dirty && services.length && document.hasFocus()) next.focus();
   }
-  for (const [id, definition] of Object.entries(providers) as [
-    ProviderId,
-    (typeof providers)[ProviderId],
-  ][]) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "secondary onboarding-provider";
-    button.dataset.provider = id;
-    button.setAttribute("aria-haspopup", "dialog");
-    button.setAttribute("aria-pressed", "false");
-    const support = t(
-      definition.experimental
-        ? "services.experimental"
-        : "onboarding.supported",
-    );
-    button.title = `${definition.name} · ${support}`;
-    const icon = providerIcon(id);
-    const body = document.createElement("span");
-    body.className = "onboarding-provider-body";
-    const name = document.createElement("strong");
-    name.textContent = definition.name;
-    const description = document.createElement("small");
-    description.textContent = t(
-      definition.urlMode === "fixed"
-        ? "onboarding.fixedService"
-        : definition.urlMode === "workspace"
-          ? "onboarding.workspaceService"
-          : "onboarding.serverService",
-    );
-    const badge = document.createElement("span");
-    badge.className = "onboarding-support";
-    badge.classList.toggle("experimental-badge", definition.experimental);
-    badge.textContent = support;
-    body.append(name, description, badge);
-    button.append(icon, body);
-    button.addEventListener("click", () => {
-      if (pending || dirty) return;
-      for (const item of providerButtons)
-        item.setAttribute("aria-pressed", String(item === button));
-      manager.add(id);
-    });
-    providerButtons.push(button);
-    app.querySelector(".onboarding-providers")!.append(button);
-  }
+  // First run is about connecting a Synology NAS. Other services stay in
+  // Settings -> Services behind the opt-in toggle.
+  const choose = (button: HTMLButtonElement) => {
+    if (pending || dirty) return;
+    for (const item of providerButtons)
+      item.setAttribute("aria-pressed", String(item === button));
+    manager.add(button.dataset.provider as ProviderId);
+  };
+  const primary = document.createElement("button");
+  primary.type = "button";
+  primary.className = "secondary onboarding-provider onboarding-primary";
+  primary.dataset.provider = "synology-chatplus";
+  primary.setAttribute("aria-haspopup", "dialog");
+  primary.setAttribute("aria-pressed", "false");
+  const body = document.createElement("span");
+  body.className = "onboarding-provider-body";
+  const name = document.createElement("strong");
+  name.textContent = t("onboarding.setupChatPlus");
+  const description = document.createElement("small");
+  description.textContent = t("onboarding.setupChatPlusHelp");
+  body.append(name, description);
+  primary.append(providerIcon("synology-chatplus"), body);
+  primary.addEventListener("click", () => choose(primary));
+  const classic = document.createElement("button");
+  classic.type = "button";
+  classic.className = "text-button onboarding-alternate";
+  classic.dataset.provider = "synology-chat";
+  classic.setAttribute("aria-haspopup", "dialog");
+  classic.setAttribute("aria-pressed", "false");
+  classic.textContent = t("onboarding.classicChat");
+  classic.title = `${providers["synology-chat"].name} · ${t("services.experimental")}`;
+  classic.addEventListener("click", () => choose(classic));
+  providerButtons.push(primary, classic);
+  app.querySelector(".onboarding-providers")!.append(primary, classic);
   another.addEventListener("click", () => {
     if (pending || dirty) return;
     picker.hidden = false;
