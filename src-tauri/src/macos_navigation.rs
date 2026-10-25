@@ -9,20 +9,26 @@
 //! as in any browser; main-frame navigations, new windows and downloads still go
 //! to wry and through the app's trust checks unchanged. Every other delegate
 //! method is forwarded to wry untouched.
+//!
+//! It also reports the first load to `load_state`: WebKit tells wry nothing when
+//! a page fails before committing (unreachable host, rejected certificate), so
+//! without it the view would stay blank with no explanation.
 use objc2::{
     define_class, msg_send,
     rc::Retained,
     runtime::{AnyObject, ProtocolObject, Sel},
     sel, ClassType, DefinedClass, MainThreadMarker, MainThreadOnly,
 };
-use objc2_foundation::{NSObject, NSObjectProtocol};
+use objc2_foundation::{NSError, NSObject, NSObjectProtocol};
 use objc2_web_kit::{
-    WKNavigationAction, WKNavigationActionPolicy, WKNavigationDelegate, WKWebView,
+    WKNavigation, WKNavigationAction, WKNavigationActionPolicy, WKNavigationDelegate, WKWebView,
 };
 use std::{cell::RefCell, collections::HashMap};
 
 pub struct Ivars {
     inner: Retained<ProtocolObject<dyn WKNavigationDelegate>>,
+    app: tauri::AppHandle,
+    service_id: String,
 }
 
 define_class!(
@@ -51,6 +57,40 @@ define_class!(
                         .webView_decidePolicyForNavigationAction_decisionHandler(
                             webview, action, handler,
                         )
+                }
+            }
+        }
+
+        #[unsafe(method(webView:didCommitNavigation:))]
+        fn did_commit(&self, webview: &WKWebView, navigation: Option<&WKNavigation>) {
+            // A pending QuickConnect service parks on about:blank; that is not its page.
+            let blank = unsafe { webview.URL() }
+                .and_then(|url| url.scheme())
+                .is_some_and(|scheme| scheme.to_string() == "about");
+            if !blank {
+                crate::load_state::ready(&self.ivars().app, &self.ivars().service_id);
+            }
+            let inner = &self.ivars().inner;
+            if inner.respondsToSelector(sel!(webView:didCommitNavigation:)) {
+                unsafe { inner.webView_didCommitNavigation(webview, navigation) }
+            }
+        }
+
+        #[unsafe(method(webView:didFailProvisionalNavigation:withError:))]
+        fn did_fail_provisional(
+            &self,
+            webview: &WKWebView,
+            navigation: Option<&WKNavigation>,
+            error: &NSError,
+        ) {
+            let domain = error.domain().to_string();
+            if let Some(reason) = crate::load_state::reason_for_url_error(&domain, error.code()) {
+                crate::load_state::fail(&self.ivars().app, &self.ivars().service_id, reason);
+            }
+            let inner = &self.ivars().inner;
+            if inner.respondsToSelector(sel!(webView:didFailProvisionalNavigation:withError:)) {
+                unsafe {
+                    inner.webView_didFailProvisionalNavigation_withError(webview, navigation, error)
                 }
             }
         }
@@ -95,7 +135,13 @@ thread_local! {
         RefCell::new(HashMap::new());
 }
 
-pub fn install(label: &str, view: &WKWebView, mtm: MainThreadMarker) {
+pub fn install(
+    app: &tauri::AppHandle,
+    label: &str,
+    service_id: &str,
+    view: &WKWebView,
+    mtm: MainThreadMarker,
+) {
     let Some(current) = (unsafe { view.navigationDelegate() }) else {
         return;
     };
@@ -103,9 +149,11 @@ pub fn install(label: &str, view: &WKWebView, mtm: MainThreadMarker) {
     if current.isKindOfClass(FrameAwareNavigation::class()) {
         return;
     }
-    let proxy = mtm
-        .alloc::<FrameAwareNavigation>()
-        .set_ivars(Ivars { inner: current });
+    let proxy = mtm.alloc::<FrameAwareNavigation>().set_ivars(Ivars {
+        inner: current,
+        app: app.clone(),
+        service_id: service_id.to_string(),
+    });
     let proxy: Retained<FrameAwareNavigation> = unsafe { msg_send![super(proxy), init] };
     unsafe { view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*proxy))) };
     INSTALLED.with(|installed| {

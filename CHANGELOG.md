@@ -2,6 +2,18 @@
 
 All notable changes will be documented here. Versions follow Semantic Versioning.
 
+## 0.7.1 - no more blank page when a server can't be reached
+
+### Fixed
+
+- A service that can't be reached no longer shows a blank white page. While it
+  loads, the window shows "Connecting to <name>…"; if it fails, it says why (the
+  address wasn't found, the server didn't answer or took too long, its
+  certificate isn't trusted, the QuickConnect ID couldn't be resolved, or the
+  computer is offline) with **Try again** and **Edit connection**, which opens
+  that service's settings. Previously a wrong first-run address left an empty
+  window and you had to know to fix it in Settings.
+
 ## 0.7.0 - GIFs in the emoji panel
 
 ### Added

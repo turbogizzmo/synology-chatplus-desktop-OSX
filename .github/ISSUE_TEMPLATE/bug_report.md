@@ -16,8 +16,14 @@ Expected behavior and actual behavior:
 ## Environment
 
 - ChatPlus version / build commit:
-- Windows version and WebView2 version:
+- macOS version:
 - Provider and provider/server version (no private URL):
+
+## Connection (if relevant)
+
+- Message on the "Can't connect" screen, if shown:
+- Address type: QuickConnect ID, LAN IP, or domain name (not the address itself):
+- Whether the same address opens in Safari:
 
 ## Notifications or downloads (if relevant)
 

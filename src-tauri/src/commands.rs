@@ -321,6 +321,36 @@ pub fn get_connection_state(
 }
 
 #[tauri::command]
+pub fn get_service_load_state(
+    window: tauri::Webview,
+    app: tauri::AppHandle,
+) -> Result<std::collections::HashMap<String, crate::load_state::Phase>, String> {
+    local_view(&window, &["main"])?;
+    Ok(crate::load_state::snapshot(&app))
+}
+
+#[tauri::command]
+pub fn retry_service(
+    window: tauri::Webview,
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<(), String> {
+    local_view(&window, &["main"])?;
+    crate::services::retry(&app, &id)
+}
+
+/// Opens the service's own editor, the same one its context menu's Settings opens.
+#[tauri::command]
+pub fn edit_service(
+    window: tauri::Webview,
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<(), String> {
+    local_view(&window, &["main"])?;
+    crate::menu::dispatch_service(&app, crate::menu::ServiceAction::Settings, &id)
+}
+
+#[tauri::command]
 pub fn get_unread_state(
     window: tauri::Webview,
     app: tauri::AppHandle,
