@@ -18,6 +18,14 @@ serialized by the native lifecycle lock. Enabled services are created on first
 activation, then hidden/shown without destroying their provider state. A service
 never activated in this run has no live session to emit notifications.
 
+A service view stays hidden until its first page commits (`load_state`); until then
+the shell draws "Connecting" or a failure screen with the reason, **Try again**
+(`retry_service`) and **Edit connection** (`edit_service`) in its place. WebKit tells
+wry nothing about a load that fails before committing, so on macOS the frame-aware
+navigation delegate reports `didCommitNavigation` and `didFailProvisionalNavigation`
+itself, and a 20-second timeout covers hosts that never answer. After a page has
+loaded, later failures leave it on screen and only the footer's connection state changes.
+
 ## Registry and persistence
 
 `ProviderDefinition` declares capability, presentation and navigation rules.
