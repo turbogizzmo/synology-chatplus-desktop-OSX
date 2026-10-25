@@ -434,5 +434,17 @@
   "updates.status.manifestMissing": "La version sélectionnée n’a pas de manifeste de mise à jour. Rien n’a été téléchargé ni installé.",
   "updates.status.releaseIncomplete": "La version sélectionnée ne contient pas d’installateur Windows x64 valide ou de signature. Rien n’a été installé.",
   "updates.status.releaseIncompleteMac": "La version sélectionnée ne contient pas de paquet de mise à jour macOS valide ou de signature. Rien n’a été installé.",
-  "updates.status.versionMismatch": "L’étiquette de version, la version du manifeste ou l’identité du paquet ne correspondent pas. Rien n’a été installé."
+  "updates.status.versionMismatch": "L’étiquette de version, la version du manifeste ou l’identité du paquet ne correspondent pas. Rien n’a été installé.",
+  "load.connecting": "Connexion à {name}…",
+  "load.failed": "Impossible de se connecter à {name}",
+  "load.reason.offline": "Cet ordinateur n’est connecté à aucun réseau. Vérifiez la connexion, puis réessayez.",
+  "load.reason.host": "L’adresse {host} est introuvable. Vérifiez qu’elle ne contient pas de faute de frappe.",
+  "load.reason.refused": "{host} ne répond pas. Vérifiez l’adresse et le port, et que le serveur est en marche.",
+  "load.reason.timeout": "{host} a mis trop de temps à répondre. Le serveur est peut-être en veille, ou l’adresse ou le port est incorrect.",
+  "load.reason.certificate": "Le certificat de sécurité de {host} n’est pas approuvé. Utilisez une adresse avec un certificat valide, comme le nom de domaine du serveur ou QuickConnect.",
+  "load.reason.insecure": "{host} a été ouvert via http://, ce qui n’est pas autorisé. Utilisez plutôt l’adresse https://.",
+  "load.reason.quickConnect": "L’ID QuickConnect n’a pas pu être résolu. Vérifiez l’ID et que QuickConnect est activé sur le serveur.",
+  "load.reason.other": "La page n’a pas pu être chargée depuis {host}.",
+  "load.retry": "Réessayer",
+  "load.edit": "Modifier la connexion"
 }

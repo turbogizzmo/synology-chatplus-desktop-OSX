@@ -434,5 +434,17 @@
   "updates.status.manifestMissing": "所選版本缺少更新資訊清單。未下載或安裝任何內容。",
   "updates.status.releaseIncomplete": "所選版本缺少有效的 Windows x64 安裝程式或簽章。未安裝任何內容。",
   "updates.status.releaseIncompleteMac": "所選版本缺少有效的 macOS 更新套件或簽章。未安裝任何內容。",
-  "updates.status.versionMismatch": "版本標籤、資訊清單版本或套件識別資訊不符。未安裝任何內容。"
+  "updates.status.versionMismatch": "版本標籤、資訊清單版本或套件識別資訊不符。未安裝任何內容。",
+  "load.connecting": "正在連線至 {name}…",
+  "load.failed": "無法連線至 {name}",
+  "load.reason.offline": "這台電腦未連線至網路。請檢查連線後再試一次。",
+  "load.reason.host": "找不到位址 {host}。請檢查是否有拼字錯誤。",
+  "load.reason.refused": "{host} 沒有回應。請檢查位址與連接埠，以及伺服器是否正在執行。",
+  "load.reason.timeout": "{host} 回應時間過長。伺服器可能處於休眠狀態，或位址或連接埠有誤。",
+  "load.reason.certificate": "{host} 的安全性憑證不受信任。請使用具有有效憑證的位址，例如伺服器的網域名稱或 QuickConnect。",
+  "load.reason.insecure": "{host} 是透過 http:// 開啟的，這不被允許。請改用 https:// 位址。",
+  "load.reason.quickConnect": "無法解析 QuickConnect ID。請檢查 ID，以及伺服器上是否已啟用 QuickConnect。",
+  "load.reason.other": "無法從 {host} 載入頁面。",
+  "load.retry": "重試",
+  "load.edit": "編輯連線"
 }

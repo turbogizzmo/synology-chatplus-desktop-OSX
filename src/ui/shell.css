@@ -78,6 +78,64 @@ body.services-page {
 .workspace-empty h1 {
   font-size: 16px;
 }
+.service-status {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 440px;
+  padding: 20px;
+  text-align: center;
+}
+.service-status h1 {
+  margin: 0;
+  font-size: 16px;
+}
+.service-status p {
+  margin: 0;
+  color: var(--muted);
+}
+.service-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+/* Most pages load quickly; only a slow one should show the connecting screen. */
+.service-status-loading {
+  animation: service-status-reveal 0.2s ease-out 0.6s both;
+}
+.service-status-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: service-status-spin 0.9s linear infinite;
+}
+@keyframes service-status-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes service-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .service-status-spinner {
+    animation-duration: 2.4s;
+  }
+}
 .service-rail {
   display: flex;
   flex-direction: column;

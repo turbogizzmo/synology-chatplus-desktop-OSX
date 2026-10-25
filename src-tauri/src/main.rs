@@ -6,6 +6,7 @@ mod desktop_notifications;
 mod diagnostics;
 mod downloads;
 mod i18n;
+mod load_state;
 #[cfg(target_os = "macos")]
 mod macos_navigation;
 #[cfg(target_os = "macos")]
@@ -81,6 +82,9 @@ fn main() {
             commands::get_settings,
             commands::get_connection_state,
             commands::get_unread_state,
+            commands::get_service_load_state,
+            commands::retry_service,
+            commands::edit_service,
             commands::activate_service,
             commands::reorder_services,
             commands::open_settings,
@@ -122,6 +126,7 @@ fn main() {
             app.manage(state::AppState(std::sync::Mutex::new(settings)));
             app.manage(state::Status::default());
             app.manage(connection::ConnectionState::default());
+            app.manage(load_state::LoadState::default());
             app.manage(updates::Service::default());
             app.manage(unread::Service::default());
             app.manage(diagnostics::NotificationHistory::default());
