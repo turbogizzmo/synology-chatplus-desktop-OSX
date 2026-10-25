@@ -35,7 +35,7 @@ policies. See [provider details](docs/PROVIDERS.md).
 
 ## Status
 
-`0.6.0`. macOS is the only target of this repository. Builds are not notarized by
+`0.7.1`. macOS is the only target of this repository. Builds are not notarized by
 Apple, so macOS asks once before the first launch. Download the latest release from the
 [download page](https://turbogizzmo.github.io/synology-chatplus-desktop-OSX/).
 
@@ -74,6 +74,13 @@ CI also uploads an unsigned `.dmg` as a workflow artifact on every run.
 2. Use **Settings > Services** to add other services or separate accounts.
 3. Enable Desktop notifications in Settings and allow ChatPlus Desktop in
    **System Settings > Notifications** when macOS asks.
+
+If the app can't reach a service, it shows why instead of an empty window: the address
+wasn't found, the server didn't answer or took too long, its certificate isn't trusted,
+or the QuickConnect ID couldn't be resolved. Use **Edit connection** to fix the address
+(check `https://` and the port, usually `5001`), or **Try again** once the server is
+awake. A NAS with a self-signed certificate needs a trusted address such as its
+QuickConnect ID or a domain with a valid certificate.
 
 Settings **Save** keeps the window open with inline confirmation; **Close** is separate.
 
