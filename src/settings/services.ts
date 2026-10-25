@@ -1,4 +1,5 @@
 import {
+  providerOffered,
   providers,
   serviceSupportsNotifications,
   type ProviderId,
@@ -86,7 +87,11 @@ export function serviceEditor(
   supportsNotifications: (
     service: Pick<ServiceConfig, "id" | "provider" | "url">,
   ) => boolean = serviceSupportsNotifications,
-  dialogHelp: { saveHelp?: string; removalHelp?: string } = {},
+  dialogHelp: {
+    saveHelp?: string;
+    removalHelp?: string;
+    showOptionalServices?: () => boolean;
+  } = {},
 ) {
   let disabled = false;
   let disposed = false;
@@ -575,7 +580,10 @@ export function serviceEditor(
     providerChoices.className = "service-provider-choices";
     providerField.append(legend, providerChoices);
     const radios = new Map<ProviderId, HTMLInputElement>();
+    const showOptional = dialogHelp.showOptionalServices?.() ?? false;
     for (const id of Object.keys(providers) as ProviderId[]) {
+      // An existing service keeps its own provider choice even while hidden.
+      if (!providerOffered(id, showOptional) && id !== draft.provider) continue;
       const definition = providers[id];
       const label = document.createElement("label");
       label.className = "service-provider-choice";
