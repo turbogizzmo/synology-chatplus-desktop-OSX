@@ -358,5 +358,17 @@
   "settings.unsavedChanges": "Unsaved changes",
   "settings.noChanges": "All changes saved",
   "settings.externalConflict": "Saved settings changed in another window. Your draft is retained. Close and reopen Settings before saving to avoid overwriting those changes.",
-  "settings.savedWarning": "Your changes were saved, but the app could not apply them completely. {message}"
+  "settings.savedWarning": "Your changes were saved, but the app could not apply them completely. {message}",
+  "load.connecting": "Connecting to {name}…",
+  "load.failed": "Can't connect to {name}",
+  "load.reason.offline": "This computer isn't connected to a network. Check your connection, then try again.",
+  "load.reason.host": "The address {host} could not be found. Check it for typos.",
+  "load.reason.refused": "{host} did not answer. Check the address and port, and that the server is running.",
+  "load.reason.timeout": "{host} took too long to answer. The server may be asleep, or the address or port may be wrong.",
+  "load.reason.certificate": "The security certificate of {host} isn't trusted. Use an address with a valid certificate, such as your server's domain name or QuickConnect.",
+  "load.reason.insecure": "{host} was opened over http://, which isn't allowed. Use the https:// address instead.",
+  "load.reason.quickConnect": "The QuickConnect ID could not be resolved. Check the ID and that QuickConnect is enabled on the server.",
+  "load.reason.other": "The page could not be loaded from {host}.",
+  "load.retry": "Try again",
+  "load.edit": "Edit connection"
 }

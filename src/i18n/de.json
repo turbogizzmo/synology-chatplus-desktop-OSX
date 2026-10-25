@@ -434,5 +434,17 @@
   "updates.status.manifestMissing": "Die gewählte Version enthält kein Aktualisierungsmanifest. Es wurde nichts heruntergeladen oder installiert.",
   "updates.status.releaseIncomplete": "Der gewählten Version fehlt ein gültiges Windows-x64-Installationsprogramm oder dessen Signatur. Es wurde nichts installiert.",
   "updates.status.releaseIncompleteMac": "Der gewählten Version fehlt ein gültiges macOS-Aktualisierungspaket oder dessen Signatur. Es wurde nichts installiert.",
-  "updates.status.versionMismatch": "Versions-Tag, Manifestversion oder Paketidentität stimmen nicht überein. Es wurde nichts installiert."
+  "updates.status.versionMismatch": "Versions-Tag, Manifestversion oder Paketidentität stimmen nicht überein. Es wurde nichts installiert.",
+  "load.connecting": "Verbindung mit {name} wird hergestellt…",
+  "load.failed": "Keine Verbindung zu {name}",
+  "load.reason.offline": "Dieser Computer ist mit keinem Netzwerk verbunden. Prüfe die Verbindung und versuche es erneut.",
+  "load.reason.host": "Die Adresse {host} wurde nicht gefunden. Prüfe sie auf Tippfehler.",
+  "load.reason.refused": "{host} antwortet nicht. Prüfe Adresse und Port und ob der Server läuft.",
+  "load.reason.timeout": "{host} hat zu lange nicht geantwortet. Der Server ist eventuell im Ruhezustand, oder Adresse oder Port sind falsch.",
+  "load.reason.certificate": "Dem Sicherheitszertifikat von {host} wird nicht vertraut. Verwende eine Adresse mit gültigem Zertifikat, etwa den Domainnamen des Servers oder QuickConnect.",
+  "load.reason.insecure": "{host} wurde über http:// geöffnet, was nicht erlaubt ist. Verwende stattdessen die https://-Adresse.",
+  "load.reason.quickConnect": "Die QuickConnect-ID konnte nicht aufgelöst werden. Prüfe die ID und ob QuickConnect auf dem Server aktiviert ist.",
+  "load.reason.other": "Die Seite konnte nicht von {host} geladen werden.",
+  "load.retry": "Erneut versuchen",
+  "load.edit": "Verbindung bearbeiten"
 }

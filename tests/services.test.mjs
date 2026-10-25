@@ -94,6 +94,94 @@ test("an empty workspace offers the normal Add service flow without a provider a
   assert.equal(document.querySelectorAll(".rail-services button").length, 1);
 });
 
+test("an unloaded service shows connecting, then a reasoned failure with Retry and Edit connection", async () => {
+  const { window, document } = parseHTML(
+    '<html><body><main id="app"></main></body></html>',
+  );
+  document.hasFocus = () => true;
+  let focused = null;
+  Object.defineProperty(document, "activeElement", { get: () => focused });
+  window.HTMLElement.prototype.focus = function () {
+    focused = this;
+  };
+  const settings = {
+    onboardingCompleted: true,
+    services: [
+      {
+        id: "nas",
+        provider: "synology-chatplus",
+        name: "Home NAS",
+        url: "https://nas.example.test:5001/chat/",
+        enabled: true,
+      },
+    ],
+    activeService: "nas",
+    includeBetaUpdates: false,
+  };
+  const calls = [],
+    events = new Map();
+  const context = {
+    window,
+    document,
+    URL,
+    nativeInvoke: async (command, args) => {
+      calls.push({ command, args });
+      if (command === "get_settings") return settings;
+      if (command === "get_service_load_state")
+        return { nas: { phase: "loading" } };
+    },
+    nativeListen: async (event, callback) => {
+      events.set(event, callback);
+      return () => {};
+    },
+  };
+  runInNewContext(result.outputFiles[0].text, context);
+  await context.railUi.renderServices();
+  assert.equal(
+    document.querySelector(".service-status-loading h1").textContent,
+    "Connecting to Home NAS…",
+  );
+  assert.equal(
+    document.querySelector(".service-status p").textContent,
+    "nas.example.test:5001",
+  );
+  events.get("service-load-changed")({
+    payload: { nas: { phase: "failed", reason: "certificate" } },
+  });
+  const failed = document.querySelector(".service-status-failed");
+  assert.equal(failed.getAttribute("role"), "alert");
+  assert.equal(
+    failed.querySelector("h1").textContent,
+    "Can't connect to Home NAS",
+  );
+  assert.match(
+    failed.querySelector("p").textContent,
+    /certificate of nas\.example\.test:5001 isn't trusted/,
+  );
+  assert.equal(document.activeElement?.dataset.railKey, "status:retry");
+  // An unrelated re-render keeps the same screen node instead of rebuilding it.
+  events.get("service-unread")({
+    payload: { revision: 1, services: {}, aggregate: { hasUnread: false } },
+  });
+  assert.equal(document.querySelector(".service-status-failed"), failed);
+  document.querySelector('[data-rail-key="status:retry"]').click();
+  document.querySelector('[data-rail-key="status:edit"]').click();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(
+    calls
+      .filter((call) =>
+        ["retry_service", "edit_service"].includes(call.command),
+      )
+      .map((call) => [call.command, call.args.id]),
+    [
+      ["retry_service", "nas"],
+      ["edit_service", "nas"],
+    ],
+  );
+  events.get("service-load-changed")({ payload: { nas: { phase: "ready" } } });
+  assert.equal(document.querySelector(".service-status"), null);
+});
+
 test("two Discord instances keep separate rail identities and configured-name tooltips", async () => {
   const { window, document } = parseHTML(
     '<html><body><main id="app"></main></body></html>',

@@ -358,5 +358,17 @@
   "settings.unsavedChanges": "Cambios sin guardar",
   "settings.noChanges": "Todos los cambios guardados",
   "settings.externalConflict": "La configuración guardada cambió en otra ventana. Se conserva tu borrador. Cierra y vuelve a abrir Configuración antes de guardar para evitar sobrescribir esos cambios.",
-  "settings.savedWarning": "Los cambios se guardaron, pero la aplicación no pudo aplicarlos por completo. {message}"
+  "settings.savedWarning": "Los cambios se guardaron, pero la aplicación no pudo aplicarlos por completo. {message}",
+  "load.connecting": "Conectando con {name}…",
+  "load.failed": "No se puede conectar con {name}",
+  "load.reason.offline": "Este equipo no está conectado a una red. Comprueba la conexión e inténtalo de nuevo.",
+  "load.reason.host": "No se encontró la dirección {host}. Comprueba que no tenga errores.",
+  "load.reason.refused": "{host} no respondió. Comprueba la dirección y el puerto, y que el servidor esté en funcionamiento.",
+  "load.reason.timeout": "{host} tardó demasiado en responder. Puede que el servidor esté en reposo o que la dirección o el puerto sean incorrectos.",
+  "load.reason.certificate": "El certificado de seguridad de {host} no es de confianza. Usa una dirección con un certificado válido, como el nombre de dominio del servidor o QuickConnect.",
+  "load.reason.insecure": "{host} se abrió mediante http://, lo cual no está permitido. Usa la dirección https://.",
+  "load.reason.quickConnect": "No se pudo resolver el ID de QuickConnect. Comprueba el ID y que QuickConnect esté activado en el servidor.",
+  "load.reason.other": "No se pudo cargar la página desde {host}.",
+  "load.retry": "Reintentar",
+  "load.edit": "Editar conexión"
 }

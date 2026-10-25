@@ -470,6 +470,7 @@ pub fn refresh(app: &AppHandle, service: &ServiceConfig, reload: bool) {
                 if let Some(view) = app.get_webview(&label) {
                     if changed {
                         if let Ok(url) = effective.parse() {
+                            crate::load_state::begin(&app, &service.id);
                             let _ = view.navigate(service.provider.dsm_launch(url));
                         }
                     } else if reload {
@@ -482,6 +483,11 @@ pub fn refresh(app: &AppHandle, service: &ServiceConfig, reload: bool) {
                     crate::shell::report(&app, failure.message(&target.id));
                 }
                 if previous.is_none() {
+                    crate::load_state::fail(
+                        &app,
+                        &service.id,
+                        crate::load_state::Reason::QuickConnect,
+                    );
                     crate::connection::set_for(
                         &app,
                         &service.id,
