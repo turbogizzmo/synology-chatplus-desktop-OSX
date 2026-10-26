@@ -39,7 +39,7 @@ md-5 = "0.10"
 [target.'cfg(windows)'.dependencies]
 tauri-winrt-notification = "0.8.1"
 webview2-com = "0.38"
-windows = { version = "0.61", features = ["UI_Notifications", "Win32_Foundation", "Win32_Security", "Win32_System_Threading", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.62", features = ["UI_Notifications", "Win32_Foundation", "Win32_Security", "Win32_System_Threading", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
 winreg = "0.55"
 
 # Same objc2 stack wry already links; used for the WKScriptMessageHandler bridge and
