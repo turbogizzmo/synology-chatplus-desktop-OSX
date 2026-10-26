@@ -34,7 +34,7 @@ tokio = { version = "1.53.1", features = ["sync", "time", "macros", "rt"] }
 reqwest = { version = "0.13", default-features = false, features = ["json"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 # QuickConnect identity check: a NAS proves itself with ezid = MD5(serverID).
-md-5 = "0.10"
+md-5 = "0.11"
 
 [target.'cfg(windows)'.dependencies]
 tauri-winrt-notification = "0.8.1"
