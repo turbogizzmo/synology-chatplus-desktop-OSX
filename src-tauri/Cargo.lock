@@ -587,7 +587,7 @@ dependencies = [
  "tokio",
  "url",
  "webview2-com",
- "windows 0.61.3",
+ "windows 0.62.2",
  "winreg 0.55.0",
 ]
 
