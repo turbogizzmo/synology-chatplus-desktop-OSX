@@ -7,6 +7,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # Wait a week before proposing a new release, so a hijacked publish has
+    # time to be caught and yanked.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 1
     groups:
       npm:
@@ -21,6 +25,10 @@ updates:
     directory: /src-tauri
     schedule:
       interval: monthly
+    # Wait a week before proposing a new release, so a hijacked publish has
+    # time to be caught and yanked.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 1
     groups:
       cargo:
@@ -40,6 +48,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # Wait a week before proposing a new release, so a hijacked publish has
+    # time to be caught and yanked.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 1
     # Grouped so paired actions (CodeQL init/analyze) always move together.
     groups:
