@@ -71,6 +71,23 @@ declare global {
     description: string;
   }
 
+  // This script runs in the NAS page, so a fetch here carries the NAS session.
+  // Only fetch media hosted by KLIPY, without cookies, whatever the API returns.
+  const klipyMedia = (value: string | undefined) => {
+    if (!value) return undefined;
+    try {
+      const url = new URL(value);
+      const host = url.hostname;
+      return url.protocol === "https:" &&
+        (host === "klipy.com" || host.endsWith(".klipy.com"))
+        ? url.toString()
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const fetchMedia = (url: string) => fetch(url, { credentials: "omit" });
+
   const gifSource = {
     // Required by KLIPY's attribution guidelines.
     placeholder: "Search KLIPY",
@@ -107,9 +124,14 @@ declare global {
       };
       return (body.results ?? []).flatMap((item) => {
         const formats = item.media_formats;
-        const preview = formats.tinygif?.url || formats.mediumgif?.url;
+        const preview =
+          klipyMedia(formats.tinygif?.url) ||
+          klipyMedia(formats.mediumgif?.url);
         // mediumgif keeps uploads small enough for chat, like Zulip does.
-        const send = formats.mediumgif?.url || formats.gif?.url || preview;
+        const send =
+          klipyMedia(formats.mediumgif?.url) ||
+          klipyMedia(formats.gif?.url) ||
+          preview;
         if (!preview || !send) return [];
         return [
           {
@@ -154,7 +176,7 @@ declare global {
     if (!zone) return "Open a chat first, then pick a GIF.";
     let file: File;
     try {
-      const response = await fetch(item.sendUrl);
+      const response = await fetchMedia(item.sendUrl);
       if (!response.ok) throw new Error(`download ${response.status}`);
       const blob = await response.blob();
       file = new File([blob], `klipy-${item.id}.gif`, {
@@ -284,7 +306,7 @@ declare global {
       token: number,
     ) => {
       try {
-        const response = await fetch(item.previewUrl);
+        const response = await fetchMedia(item.previewUrl);
         if (!response.ok) throw new Error(`preview ${response.status}`);
         const blob = await response.blob();
         if (token !== requestToken) return;
