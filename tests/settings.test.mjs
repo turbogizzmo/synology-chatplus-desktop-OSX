@@ -101,6 +101,7 @@ async function fixture(options = {}) {
     notificationSound: true,
     unreadTitle: true,
     unreadTray: true,
+    showOptionalServices: false,
     ...options.settings,
   };
   let settingsTarget = options.target ?? null;
@@ -301,36 +302,60 @@ function freshSettings(overrides = {}) {
 
 function pickOnboardingProvider(fixture, provider) {
   fixture.document
-    .querySelector(`.onboarding-provider[data-provider="${provider}"]`)
+    .querySelector(`.onboarding-providers [data-provider="${provider}"]`)
     .click();
 }
 
-test("fresh onboarding lists the actual registry with truthful support and no preselected provider", async () => {
+// The Synology form needs an address; Discord-style URL-less providers are not
+// offered during onboarding.
+function addOnboardingService(fixture) {
+  pickOnboardingProvider(fixture, "synology-chat");
+  setServiceField(fixture, "url", "https://nas.example/chat/");
+}
+
+test("fresh onboarding leads with Synology ChatPlus and offers classic Synology Chat as the only alternative", async () => {
   const f = await fixture({ settings: freshSettings() });
-  const cards = [...f.document.querySelectorAll(".onboarding-provider")];
+  assert.equal(
+    f.document.querySelector(".page-header h1").textContent,
+    "Welcome to Synology ChatPlus",
+  );
   assert.deepEqual(
-    cards.map((card) => card.dataset.provider),
-    Object.keys(f.providers),
+    [
+      ...f.document.querySelectorAll(".onboarding-providers [data-provider]"),
+    ].map((button) => button.dataset.provider),
+    ["synology-chatplus", "synology-chat"],
+  );
+  const primary = f.document.querySelector(".onboarding-primary");
+  assert.equal(primary.dataset.provider, "synology-chatplus");
+  assert.ok(primary.querySelector(".provider-icon"));
+  assert.match(primary.textContent, /Synology ChatPlus/);
+  assert.match(
+    f.document.querySelector(".onboarding-alternate").textContent,
+    /Synology Chat/,
+  );
+  assert.doesNotMatch(
+    f.document.getElementById("app").textContent,
+    /Discord|Slack|Mattermost/,
   );
   assert.equal(
-    f.document.querySelector(".onboarding-provider[aria-pressed=true]"),
+    f.document.querySelector(".onboarding-providers [aria-pressed=true]"),
     null,
   );
   assert.equal(f.document.querySelector("dialog"), null);
-  assert.equal(f.document.getElementById("server"), null);
-  for (const card of cards) {
-    const provider = f.providers[card.dataset.provider];
-    assert.equal(card.querySelector("strong").textContent, provider.name);
-    assert.ok(card.querySelector(".provider-icon"));
-    assert.equal(
-      card.querySelector(".onboarding-support").textContent,
-      provider.experimental ? "Experimental" : "Supported",
-    );
-    assert.ok(card.querySelector("small").textContent);
-  }
   assert.equal(
     f.calls.some((call) => call.command === "save_settings"),
     false,
+  );
+});
+
+test("the onboarding service form offers only Synology providers", async () => {
+  const f = await fixture({ settings: freshSettings() });
+  pickOnboardingProvider(f, "synology-chatplus");
+  assert.deepEqual(
+    [...f.document.querySelectorAll('input[name="service-provider"]')].map(
+      (radio) => radio.value,
+    ),
+    ["synology-chatplus", "synology-chat"],
   );
 });
 
@@ -377,50 +402,46 @@ test("choosing ChatPlus reuses the shared validation and persists a fresh isolat
   assert.equal(f.document.getElementById("add-service").hidden, false);
 });
 
-test("a non-primary provider opens its own shared form without creating a Synology service", async () => {
+test("the classic Synology Chat link opens its own shared form", async () => {
   const f = await fixture({ settings: freshSettings() });
-  pickOnboardingProvider(f, "discord");
+  pickOnboardingProvider(f, "synology-chat");
   assert.equal(
-    f.document.getElementById("service-dialog-provider-discord").checked,
+    f.document.getElementById("service-dialog-provider-synology-chat").checked,
     true,
   );
-  assert.equal(
-    f.document.getElementById("service-dialog-url").closest(".service-field")
-      .hidden,
-    true,
-  );
-  setServiceField(f, "name", "Community");
+  setServiceField(f, "name", "Office NAS");
+  setServiceField(f, "url", "https://nas.example/chat");
   applyServiceDialog(f);
   await f.flush();
   assert.equal(f.settings.services.length, 1);
-  assert.equal(f.settings.services[0].provider, "discord");
-  assert.equal(f.settings.services[0].url, f.providers.discord.defaultUrl);
-  assert.equal(f.settings.services[0].name, "Community");
+  assert.equal(f.settings.services[0].provider, "synology-chat");
+  assert.equal(f.settings.services[0].url, "https://nas.example/chat/");
+  assert.equal(f.settings.services[0].name, "Office NAS");
 });
 
 test("onboarding saves two different providers before Continue and preserves separate IDs", async () => {
   const f = await fixture({ settings: freshSettings() });
-  pickOnboardingProvider(f, "discord");
+  pickOnboardingProvider(f, "synology-chatplus");
+  setServiceField(f, "url", "https://home.example/chat/");
   applyServiceDialog(f);
   await f.flush();
   const firstId = f.settings.services[0].id;
   f.document.getElementById("add-service").click();
   assert.equal(
-    f.document.querySelector(".onboarding-provider[aria-pressed=true]"),
+    f.document.querySelector(".onboarding-providers [aria-pressed=true]"),
     null,
   );
-  pickOnboardingProvider(f, "mattermost");
-  setServiceField(f, "url", "https://team.example/");
-  setServiceField(f, "name", "Team");
+  pickOnboardingProvider(f, "synology-chat");
+  setServiceField(f, "url", "https://office.example/chat/");
+  setServiceField(f, "name", "Office");
   applyServiceDialog(f);
   await f.flush();
   assert.deepEqual(
     f.settings.services.map((service) => service.provider),
-    ["discord", "mattermost"],
+    ["synology-chatplus", "synology-chat"],
   );
   assert.equal(f.settings.services[0].id, firstId);
   assert.notEqual(f.settings.services[1].id, firstId);
-  assert.equal(f.settings.services[1].notifications, false);
   assert.equal(
     f.calls.some((call) => call.command === "complete_onboarding"),
     false,
@@ -474,13 +495,13 @@ test("existing and legacy empty profiles bypass onboarding and use the normal Ad
 
 test("onboarding Cancel does not save and a failed Add retains one draft for retry", async () => {
   const f = await fixture({ settings: freshSettings() });
-  pickOnboardingProvider(f, "discord");
+  pickOnboardingProvider(f, "synology-chat");
   f.document.querySelector(".service-dialog-footer .secondary").click();
   assert.equal(
     f.calls.some((call) => call.command === "save_settings"),
     false,
   );
-  pickOnboardingProvider(f, "discord");
+  addOnboardingService(f);
   f.fail();
   applyServiceDialog(f);
   await f.flush();
@@ -506,7 +527,7 @@ test("onboarding Cancel does not save and a failed Add retains one draft for ret
 
 test("onboarding waits for persistence and cannot complete behind an open dialog", async () => {
   const f = await fixture({ settings: freshSettings() });
-  pickOnboardingProvider(f, "discord");
+  addOnboardingService(f);
   f.document.getElementById("onboarding-skip").click();
   await f.flush();
   assert.equal(
@@ -536,7 +557,7 @@ test("onboarding waits for persistence and cannot complete behind an open dialog
 test("onboarding accepts a committed save warning and Continue keeps one persisted identity", async () => {
   const f = await fixture({ settings: freshSettings() });
   f.failRemovalAfterSave();
-  pickOnboardingProvider(f, "discord");
+  addOnboardingService(f);
   applyServiceDialog(f);
   await f.flush();
   assert.equal(f.settings.services.length, 1);
@@ -567,7 +588,7 @@ test("onboarding accepts a committed save warning and Continue keeps one persist
 
 test("a persisted service ID cannot acknowledge an onboarding edit that was not saved", async () => {
   const f = await fixture({ settings: freshSettings() });
-  pickOnboardingProvider(f, "discord");
+  addOnboardingService(f);
   applyServiceDialog(f);
   await f.flush();
   const persisted = structuredClone(f.settings.services[0]);
@@ -1252,7 +1273,7 @@ test("menu Remove uses draft confirmation and cancellation leaves persisted sett
 });
 
 test("Add Apply and Remove remain local until Save and do not use immediate-removal IPC", async () => {
-  const f = await fixture();
+  const f = await fixture({ settings: { showOptionalServices: true } });
   f.document.getElementById("add-service").click();
   chooseProvider(f, "discord");
   setServiceField(f, "name", "Temporary Discord");
@@ -1273,6 +1294,33 @@ test("Add Apply and Remove remain local until Save and do not use immediate-remo
   assert.equal(
     f.document.getElementById("draft-status").classList.contains("has-unsaved"),
     false,
+  );
+});
+
+test("Settings offers other chat services only after the toggle and saves that choice", async () => {
+  const f = await fixture();
+  const toggle = f.document.getElementById("show-optional-services");
+  assert.equal(toggle.checked, false);
+  const choices = () =>
+    [...f.document.querySelectorAll('input[name="service-provider"]')].map(
+      (radio) => radio.value,
+    );
+  f.document.getElementById("add-service").click();
+  assert.deepEqual(choices(), ["synology-chatplus", "synology-chat"]);
+  f.document.querySelector(".service-dialog-footer .secondary").click();
+  toggle.checked = true;
+  dispatch(f.window, toggle, "change");
+  f.document.getElementById("add-service").click();
+  assert.ok(choices().includes("discord"));
+  f.document.querySelector(".service-dialog-footer .secondary").click();
+  assert.equal(f.document.getElementById("save").disabled, false);
+  submitSettings(f);
+  await f.flush();
+  assert.equal(f.settings.showOptionalServices, true);
+  const reopened = await fixture({ settings: structuredClone(f.settings) });
+  assert.equal(
+    reopened.document.getElementById("show-optional-services").checked,
+    true,
   );
 });
 
