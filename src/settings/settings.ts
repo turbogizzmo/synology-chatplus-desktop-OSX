@@ -98,6 +98,7 @@ export async function renderSettings() {
       <div data-panel="services" hidden>
         <div class="services-heading"><div><h2>${t("common.services")}</h2><p>${t("services.description")}</p></div><button id="add-service" class="secondary" type="button"><span aria-hidden="true">+</span> ${t("services.add")}</button></div>
         <div id="service-editor"></div><small class="services-help">${t("services.help")}</small>
+        <fieldset class="optional-services"><label class="toggle"><input id="show-optional-services" type="checkbox" aria-describedby="optional-services-help">${t("services.showOptional")}</label><small id="optional-services-help">${t("services.showOptionalHelp")}</small></fieldset>
       </div>
       <div data-panel="updates" hidden>
         <fieldset><legend>${t("common.updates")}</legend>
@@ -252,6 +253,7 @@ export async function renderSettings() {
         updateDirty();
       },
       supportsNotifications,
+      { showOptionalServices: () => input("show-optional-services").checked },
     );
     document.getElementById("add-service")!.addEventListener("click", () => {
       if (!persistencePending) serviceManager?.add();
@@ -272,6 +274,7 @@ export async function renderSettings() {
     input("unread-tray").checked = original.unreadTray;
     input("automatic-updates").checked = original.automaticUpdates;
     input("include-beta-updates").checked = original.includeBetaUpdates;
+    input("show-optional-services").checked = original.showOptionalServices;
     (
       document.getElementById("notification-preview") as HTMLSelectElement
     ).value = original.notificationPreview;
@@ -291,6 +294,7 @@ export async function renderSettings() {
     ["unread-tray", "unreadTray"],
     ["automatic-updates", "automaticUpdates"],
     ["include-beta-updates", "includeBetaUpdates"],
+    ["show-optional-services", "showOptionalServices"],
   ] as const;
   const hydratePreferences = (settings: Settings) => {
     for (const [id, key] of preferenceControls) {
@@ -327,6 +331,7 @@ export async function renderSettings() {
           unreadTray: input("unread-tray").checked,
           automaticUpdates: input("automatic-updates").checked,
           includeBetaUpdates: input("include-beta-updates").checked,
+          showOptionalServices: input("show-optional-services").checked,
         }
       : {}),
   });
@@ -356,6 +361,7 @@ export async function renderSettings() {
       notificationSound: settings.notificationSound,
       unreadTitle: settings.unreadTitle,
       unreadTray: settings.unreadTray,
+      showOptionalServices: settings.showOptionalServices ?? false,
     });
   updateDirty = () => {
     const dirty = settingsKey(readDraft()) !== settingsKey(original);

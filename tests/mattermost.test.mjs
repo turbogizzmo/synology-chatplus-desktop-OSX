@@ -88,6 +88,8 @@ function formFixture() {
     document.getElementById("editor"),
     services,
     () => {},
+    undefined,
+    { showOptionalServices: () => true },
   );
   return { window, document, services, manager };
 }

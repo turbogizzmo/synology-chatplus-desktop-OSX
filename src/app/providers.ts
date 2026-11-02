@@ -25,6 +25,8 @@ export interface ProviderDefinition {
   name: string;
   icon: string;
   experimental: boolean;
+  // Non-Synology services stay out of the Add list until Settings opts in.
+  optional: boolean;
   notifications: boolean;
   urlMode: "server" | "workspace" | "fixed";
   urlLabel: string;
@@ -36,6 +38,7 @@ export const providers = {
     name: "Synology ChatPlus",
     icon: "CP",
     experimental: false,
+    optional: false,
     notifications: true,
     urlMode: "server",
     urlLabel: "Server URL",
@@ -45,6 +48,7 @@ export const providers = {
     name: "Synology Chat",
     icon: "SC",
     experimental: true,
+    optional: false,
     notifications: true,
     urlMode: "server",
     urlLabel: "Server URL",
@@ -54,6 +58,7 @@ export const providers = {
     name: "Slack",
     icon: "S",
     experimental: true,
+    optional: true,
     notifications: false,
     urlMode: "workspace",
     urlLabel: "Workspace URL",
@@ -63,6 +68,7 @@ export const providers = {
     name: "Discord",
     icon: "D",
     experimental: true,
+    optional: true,
     notifications: true,
     urlMode: "fixed",
     urlLabel: "",
@@ -72,12 +78,20 @@ export const providers = {
     name: "Mattermost",
     icon: "M",
     experimental: true,
+    optional: true,
     notifications: false,
     urlMode: "server",
     urlLabel: "Server URL",
     defaultUrl: "",
   },
 } as const satisfies Record<ProviderId, ProviderDefinition>;
+
+export function providerOffered(
+  id: ProviderId,
+  showOptionalServices: boolean,
+): boolean {
+  return showOptionalServices || !providers[id].optional;
+}
 
 export function serviceSupportsNotifications(
   service: Pick<ServiceConfig, "id" | "provider" | "url">,
