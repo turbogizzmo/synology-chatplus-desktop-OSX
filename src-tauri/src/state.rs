@@ -378,6 +378,7 @@ fn load_preferences(
     if let Some(value) = stored.as_mut() {
         migrated |= migrate_update_preference(value);
         migrated |= migrate_onboarding_preference(value);
+        migrated |= migrate_optional_services_preference(value);
     }
     let mut settings: Settings = stored
         .clone()
@@ -633,6 +634,21 @@ mod tests {
         .unwrap();
         assert!(!opted_out.show_optional_services);
         assert!(!Settings::default().show_optional_services);
+    }
+
+    #[test]
+    fn optional_services_backfill_is_persisted_once_on_load() {
+        let mut stored = Some(serde_json::json!({
+            "onboardingCompleted": true, "includeBetaUpdates": false, "serviceSchema": 1,
+            "services": [{"id": "b", "provider": "discord", "name": "Discord",
+                "url": "https://discord.com/app/", "enabled": true, "notifications": true}]
+        }));
+        let (settings, migrated) = load_preferences(&mut stored, true).unwrap();
+        assert!(migrated, "the backfilled preference must be written back");
+        assert!(settings.show_optional_services);
+        let mut round_trip = Some(migrated_settings_value(&settings, stored).unwrap());
+        assert_eq!(round_trip.as_ref().unwrap()["showOptionalServices"], true);
+        assert!(!load_preferences(&mut round_trip, true).unwrap().1);
     }
 
     #[test]
